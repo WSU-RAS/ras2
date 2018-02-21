@@ -30,3 +30,23 @@ Next steps:
 * Connect `goto` with Chris' turtlebot navigation through actionlib. Chris should write an actionlib server to receive goals.
 * Chris part will have to understand what action it needs to perform.
 * Tablet pending...
+
+## Git Submodules
+Clone getting submodules:
+
+    git clone --recursive https://github.com/WSU-RAS/ras.git ras
+
+Adding a new submodule:
+
+    cd ~/ras/src/
+    git submodule add https://github.com/WSU-RAS/object_detection_msgs.git object_detection_msgs
+    git submodule init
+
+Updating all submodules to latest commit on origin:
+
+    git submodule foreach git pull
+
+Then to commit and push your changes:
+
+    git commit -a
+    git push
