@@ -1,9 +1,11 @@
 #goal definition
-int32 error
+uint32 task_number
+int32 error_step
 ---
 #result definition
-int32 result
+uint8 status
 bool is_complete
 ---
 #feedback
-int32 status
+uint8 status
+string text
