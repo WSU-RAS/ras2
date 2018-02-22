@@ -50,3 +50,7 @@ Then to commit and push your changes:
 
     git commit -a
     git push
+
+Initializing newly added submodules (e.g. somebody else adds one):
+
+    git submodule update --init --recursive
