@@ -14,7 +14,7 @@ rosrun scheduler manager.py
 
 Publish a goal to the `doerror_server` actionlib server `/doerror_server/goal`. This is a mock simulation that an error was detected and a `goal` is sent to the `manager`. Then the `manager` triggers the `goto` action.
 ```
-rostopic pub /doerror_server/goal scheduler/DoErrorActionGoal '{header: auto, goal:{task_number: 3, error_step: 2}}'
+rostopic pub /doerror_server/goal ras_msgs/DoErrorActionGoal '{header: auto, goal:{task_number: 3, error_step: 2}}'
 ```
 
 ## Git Submodules

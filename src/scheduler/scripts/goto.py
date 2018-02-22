@@ -3,7 +3,7 @@
 import rospy
 
 from actionlib import SimpleActionServer
-from scheduler.msg import GotoAction, GotoFeedback, GotoResult
+from ras_msgs.msg import GotoAction, GotoFeedback, GotoResult
 
 class Task:
     HOME = 0

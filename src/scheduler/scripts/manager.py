@@ -4,8 +4,8 @@ import rospy
 
 from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
-from scheduler.msg import GotoAction, GotoGoal
-from scheduler.msg import DoErrorAction, DoErrorFeedback, DoErrorResult
+from ras_msgs.msg import GotoAction, GotoGoal
+from ras_msgs.msg import DoErrorAction, DoErrorFeedback, DoErrorResult
 
 
 class SchedulerServer:
