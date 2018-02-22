@@ -1,9 +1,0 @@
-#goal definition
-int32 error
----
-#result definition
-int32 result
-bool is_complete
----
-#feedback
-int32 status
