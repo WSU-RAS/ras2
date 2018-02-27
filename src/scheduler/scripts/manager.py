@@ -29,6 +29,7 @@ class SchedulerServer:
         rospy.loginfo("Executing Do Error")
 
         goto_goal = GotoGoal()
+        goto_goal.type = 1  # Find Human
         goto_goal.task_number = goal.task_number
         goto_goal.error_step = goal.error_step
         goto_goal.error_object = goal.error_step
@@ -77,17 +78,18 @@ class SchedulerServer:
             status = "SUCCEEDED"
         elif terminal_state == GoalStatus.LOST:
             status = "LOST"
-        rospy.loginfo("terminal state: {}  result: ({}, {})".format(status, result.status, result.is_complete))
+        rospy.loginfo("terminal state: {}  result: ({}, {})".format(
+            status, result.status, result.is_complete))
 
     def goto_active_cb(self):
         self.is_goto_active = True
 
     def goto_feedback_cb(self, feedback):
-        rospy.loginfo("goto feedback: x={}, y={}, z={}, status={}".format(feedback.x, feedback.y, feedback.z, feedback.text))
+        rospy.loginfo("goto feedback: x={}, y={}, z={}, status={}".format(
+            feedback.x, feedback.y, feedback.z, feedback.text))
+
 
 if __name__ == '__main__':
     rospy.init_node('scheduler_server')
     server = SchedulerServer()
     rospy.spin()
-
-        
