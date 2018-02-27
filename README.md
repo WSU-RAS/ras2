@@ -30,11 +30,16 @@ Adding a new submodule:
     git submodule add https://github.com/WSU-RAS/object_detection_msgs.git object_detection_msgs
     git submodule init
 
-Updating all submodules to latest commit on origin:
+Updating a submodule to the latest commit on origin:
 
-    git submodule foreach git pull
+    cd src/name_of_submodule
+    git pull
 
 Then to commit and push your changes:
 
     git commit -a
     git push
+
+Initializing newly added submodules (e.g. somebody else adds one):
+
+    git submodule update --init --recursive
