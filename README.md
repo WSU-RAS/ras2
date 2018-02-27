@@ -1,7 +1,5 @@
 # Robot Activity Support (RAS)
 
-![RAS flowchart](ras_flow.png)
-
 ## Scheduler
 
 Run the `goto` action server node.
