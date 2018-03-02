@@ -19,3 +19,6 @@
 [submodule "src/tablet_interface"]
 	path = src/tablet_interface
 	url = https://github.com/WSU-RAS/tablet_interface.git
+[submodule "src/rosbridge_suite"]
+	path = src/rosbridge_suite
+	url = https://github.com/RobotWebTools/rosbridge_suite.git
