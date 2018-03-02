@@ -5,21 +5,28 @@ import rospy
 from actionlib import SimpleActionServer
 from ras_msgs.msg import GotoAction, GotoFeedback, GotoResult
 
-class Task:
-    HOME = 0
+
+class GoalType:
+    BASE = 0
     HUMAN = 1
     OBJECT = 2
-    WATER_PLANTS = 3
-    TAKE_MEDS = 4
-    WALK_DOG = 5
-    tasks = {
-        HOME: "Go to home",
+    types = {
+        BASE: "Go to base",
         HUMAN: "Find human",
-        OBJECT: "Guide to object",
+        OBJECT: "Guide to object"
+    }
+
+
+class Task:
+    WATER_PLANTS = 0
+    TAKE_MEDS = 1
+    WALK_DOG = 2
+    tasks = {
         WATER_PLANTS: "Watering plants task",
         TAKE_MEDS: "Taking medication with food task",
         WALK_DOG: "Bring dog for a walk task"
     }
+
 
 class GotoServer:
 
@@ -35,8 +42,9 @@ class GotoServer:
         x = 20
         y = -20
         z = 0
-        
-        rospy.loginfo("Executing {}".format(Task.tasks[goal.task_number]))
+
+        rospy.loginfo("Executing {} for {}".format(
+            GoalType.types[goal.type], Task.tasks[goal.task_number]))
         rospy.loginfo("error_step={}  error_object={}".format(goal.error_step, goal.error_object))
 
         goto_feedback = GotoFeedback()
@@ -64,9 +72,8 @@ class GotoServer:
         goto_result.is_complete = True
         self.goto_server.set_succeeded(goto_result)
 
+
 if __name__ == '__main__':
     rospy.init_node('goto_server')
     server = GotoServer()
     rospy.spin()
-
-        
