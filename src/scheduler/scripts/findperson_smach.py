@@ -74,7 +74,7 @@ def main():
 			result.Y -= 0.0
 			return result 
 
-		smach.StateMachine.add('FINDPERSON', smach_ros.SimpleActionState('find_person', FindPersonAction,\
+		smach.StateMachine.add('FINDPERSON', smach_ros.SimpleActionState('find_person_server', FindPersonAction,\
 			goal = find_person_goal),  \
 			# result_cb = findperson_result_cb) \
 			transitions = {'succeeded': 'GOTOXY', 'aborted': 'error', 'preempted': 'error'}, \
