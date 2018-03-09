@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from lib import WaterPlantsDag, WalkDogDag, TakeMedicationDag
-from lib import Items
+from util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
+from util import Items
 
 
 def check_sequence(graph, seq=[], task_count=0, task_num=-1):
