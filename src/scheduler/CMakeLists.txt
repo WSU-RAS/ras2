@@ -10,7 +10,6 @@ project(scheduler)
 find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
-  message_generation
   roscpp
   rospy
   std_msgs
@@ -70,12 +69,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  actionlib_msgs
-  std_msgs
-  ras_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   actionlib_msgs
+#   std_msgs
+#   ras_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -109,7 +108,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES scheduler
-  CATKIN_DEPENDS actionlib actionlib_msgs message_runtime roscpp rospy std_msgs
+  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs ras_msgs
 #  DEPENDS system_lib
 )
 

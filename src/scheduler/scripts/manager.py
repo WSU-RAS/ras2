@@ -14,18 +14,18 @@ class SchedulerServer:
         self.is_goto_active = False
         self.rate = rospy.Rate(10)
 
-        self.doerror_server = SimpleActionServer(
-            'doerror_server', DoErrorAction,
-            execute_cb=self.doerror_execute,
+        self.do_error = SimpleActionServer(
+            'do_error', DoErrorAction,
+            execute_cb=self.do_error_execute,
             auto_start=False)
-        self.doerror_server.start()
+        self.do_error.start()
 
         self.goto_client = SimpleActionClient(
             'goto', GotoAction)
-        self.doerror_server.start()
+        self.do_error.start()
         self.goto_client.wait_for_server()
 
-    def doerror_execute(self, goal):
+    def do_error_execute(self, goal):
         rospy.loginfo("Executing Do Error")
 
         goto_goal = GotoGoal()
@@ -42,26 +42,26 @@ class SchedulerServer:
         while not self.is_goto_active:
             self.rate.sleep()
 
-        doerror_feedback = DoErrorFeedback()
-        doerror_feedback.status = 1
-        doerror_feedback.text = "SENT GOTO GOAL TO TURTLEBOT"
-        self.doerror_server.publish_feedback(doerror_feedback)
+        do_error_feedback = DoErrorFeedback()
+        do_error_feedback.status = 1
+        do_error_feedback.text = "SENT GOTO GOAL TO TURTLEBOT"
+        self.do_error.publish_feedback(do_error_feedback)
         self.rate.sleep()
 
         while self.is_goto_active:
-            doerror_feedback.status = 2
-            doerror_feedback.text = "TURTLEBOT NAVIGATING"
-            self.doerror_server.publish_feedback(doerror_feedback)
+            do_error_feedback.status = 2
+            do_error_feedback.text = "TURTLEBOT NAVIGATING"
+            self.do_error.publish_feedback(do_error_feedback)
             self.rate.sleep()
 
-        doerror_feedback.status = 3
-        doerror_feedback.text = "TURTLEBOT COMPLETED TASK"
-        self.doerror_server.publish_feedback(doerror_feedback)
+        do_error_feedback.status = 3
+        do_error_feedback.text = "TURTLEBOT COMPLETED TASK"
+        self.do_error.publish_feedback(do_error_feedback)
 
-        doerror_result = DoErrorResult()
-        doerror_result.status = 3
-        doerror_result.is_complete = True
-        self.doerror_server.set_succeeded(doerror_result)
+        do_error_result = DoErrorResult()
+        do_error_result.status = 3
+        do_error_result.is_complete = True
+        self.do_error.set_succeeded(do_error_result)
 
     def goto_done_cb(self, terminal_state, result):
         self.is_goto_active = False
