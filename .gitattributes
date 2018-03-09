@@ -1,0 +1,4 @@
+src/casas/location.py filter=git-crypt diff=git-crypt
+src/casas/objects.py filter=git-crypt diff=git-crypt
+src/casas/rabbitmq.py filter=git-crypt diff=git-crypt
+src/casas/xmpp.py filter=git-crypt diff=git-crypt
