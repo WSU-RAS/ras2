@@ -4,28 +4,7 @@ import rospy
 
 from actionlib import SimpleActionServer
 from ras_msgs.msg import GotoAction, GotoFeedback, GotoResult
-
-
-class GoalType:
-    BASE = 0
-    HUMAN = 1
-    OBJECT = 2
-    types = {
-        BASE: "Go to base",
-        HUMAN: "Find human",
-        OBJECT: "Guide to object"
-    }
-
-
-class Task:
-    WATER_PLANTS = 0
-    TAKE_MEDS = 1
-    WALK_DOG = 2
-    tasks = {
-        WATER_PLANTS: "Watering plants task",
-        TAKE_MEDS: "Taking medication with food task",
-        WALK_DOG: "Bring dog for a walk task"
-    }
+from adl.util import Goal, Task
 
 
 class GotoServer:
@@ -44,7 +23,7 @@ class GotoServer:
         z = 0
 
         rospy.loginfo("Executing {} for {}".format(
-            GoalType.types[goal.type], Task.tasks[goal.task_number]))
+            Goal.types[goal.type], Task.types[goal.task_number]))
         rospy.loginfo("error_step={}  error_object={}".format(goal.error_step, goal.error_object))
 
         goto_feedback = GotoFeedback()

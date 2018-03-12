@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   ras_msgs
+  adl_error_detection
 )
 
 ## System dependencies are found with CMake's conventions
@@ -108,7 +109,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES scheduler
-  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs ras_msgs
+  CATKIN_DEPENDS actionlib actionlib_msgs roscpp rospy std_msgs ras_msgs adl_error_detection
 #  DEPENDS system_lib
 )
 
