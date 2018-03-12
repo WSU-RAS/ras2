@@ -6,14 +6,14 @@ from util import Items
 
 def check_sequence(graph, seq=[], task_count=0, task_num=-1):
     if seq == []:
-        return 0, False, graph['label'], False, graph['label']
+        return 0, False, graph['current'], False, graph['current']
 
     # Y intersection, pick a branch
     if 'Y' in graph:
         long_path = None
         for branch in graph['Y']:
             if seq[0] in branch:
-                path = _check_sequence(branch, seq, task_count, task_num-1, label=branch['label'])
+                path = _check_sequence(branch, seq, task_count, task_num-1, current=branch['current'])
                 if long_path is None:
                     long_path = path
                     continue
@@ -24,20 +24,20 @@ def check_sequence(graph, seq=[], task_count=0, task_num=-1):
         return long_path
 
     if seq[0] not in graph:
-        return 0, False, graph['label'], False, graph['label']
+        return 0, False, graph['current'], False, graph['current']
 
     if len(seq) == 1:
-        return 0, True, graph['label'], False, graph['next']
+        return 0, True, graph['current'], False, graph['next']
 
-    return _check_sequence(graph[seq[0]], seq, task_count+1, task_num-1, label=graph['label'])
+    return _check_sequence(graph[seq[0]], seq, task_count+1, task_num-1, current=graph['current'])
 
-def _check_sequence(graph, seq=[], task_count=0, task_num=-1, label=None):
+def _check_sequence(graph, seq=[], task_count=0, task_num=-1, current=None):
     # Y intersection, pick a branch
     if 'Y' in graph:
         long_path = None
         for branch in graph['Y']:
             if seq[0] in branch:
-                path = _check_sequence(branch, seq, task_count, task_num, label=branch['label'])
+                path = _check_sequence(branch, seq, task_count, task_num, current=branch['current'])
                 if path[1] and path[3]: # Completed
                     return path
                 if long_path is None:
@@ -50,20 +50,20 @@ def _check_sequence(graph, seq=[], task_count=0, task_num=-1, label=None):
         return long_path
 
     if seq[0] not in graph:
-        return task_count, False, graph['label'], False, graph['label']
+        return task_count, False, graph['current'], False, graph['current']
 
     if task_count == task_num and seq[0] == graph['Done']:
-        return task_count, True, graph['label'], True, graph['next']
+        return task_count, True, graph['current'], True, graph['next']
 
     if len(seq) == 1:
         if type(graph[seq[0]]) is dict:
-            return task_count, True, graph['label'], False, graph['next']
-        return task_count-1, True, label, False, graph['label']
+            return task_count, True, graph['current'], False, graph['next']
+        return task_count-1, True, current, False, graph['current']
 
     if type(graph[seq[0]]) is dict:
-        return _check_sequence(graph[seq[0]], seq, task_count+1, task_num, graph['label'])
+        return _check_sequence(graph[seq[0]], seq, task_count+1, task_num, graph['current'])
 
-    return _check_sequence(graph, seq[1:], task_count, task_num, label)
+    return _check_sequence(graph, seq[1:], task_count, task_num, current)
 
 
 
@@ -71,17 +71,22 @@ if __name__ == '__main__':
 
     print(check_sequence(
         WaterPlantsDag.taskStart,
-        seq=['W', 'S', 'P1', 'P2', 'P3', 'S'],
-        task_num=WaterPlantsDag.numTasks))
+        seq=['W', 'S', 'P2', 'P3', 'S'],
+        task_num=WaterPlantsDag.num_tasks))
     print(check_sequence(
         WaterPlantsDag.taskStart,
-        seq=['W', 'S', 'P1', 'P2', 'P3', 'S', 'W'],
-        task_num=WaterPlantsDag.numTasks))
+        seq=['W', 'S', 'P2', 'P3', 'S', 'W'],
+        task_num=WaterPlantsDag.num_tasks))
 
     print(check_sequence(
         WalkDogDag.taskStart,
         seq=['U', 'U', 'U'],
-        task_num=WalkDogDag.numTasks))
+        task_num=WalkDogDag.num_tasks))
+    
+    print(check_sequence(
+        WalkDogDag.taskStart,
+        seq=['U', 'L', 'K', 'D', 'DR'],
+        task_num=WalkDogDag.num_tasks))
 
     print(check_sequence(
         TakeMedicationDag.taskStart,
@@ -91,5 +96,5 @@ if __name__ == '__main__':
              'CH', 'C', 'CH', 'M', 'F', 'C', 'C', 'M', 'F', 'M',
              'F', 'M', 'C', 'F', 'F', 'S', 'C', 'C', 'F', 'M',
              'M', 'F', 'C', 'M', 'C', 'C', 'G', 'M', 'G', 'M'],
-        task_num=TakeMedicationDag.numTasks))
+        task_num=TakeMedicationDag.num_tasks))
 

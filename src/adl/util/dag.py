@@ -13,261 +13,267 @@ DR  door
 '''
 
 class WaterPlantsDag(object):
-    subtaskName = {
-        0: 'Retrieve Water can',
-        1: 'Fill Water can',
-        2: 'Water Windowsill plant',
-        3: 'Water Coffee table plant',
-        4: 'Water Side table plant',
-        5: 'Rinse Water can',
-        6: 'Return Water can',
-        7: 'Completed'
+    subtask = {
+        'retrive_water': {
+            'label': 'Retrieve Water can', 
+            'index': 0},
+        'fill_water': {
+            'label': 'Fill Water can', 
+            'index': 1},
+        'water_plant2': {
+            'label': 'Water Coffee table plant', 
+            'index': 2},
+        'water_plant3': {
+            'label': 'Water Side table plant', 
+            'index': 3},
+        'rinse_can': {
+            'label': 'Rinse Water can', 
+            'index': 4},
+        'return_can': {
+            'label': 'Return Water can', 
+            'index': 5},
+        'Done': {
+            'label': 'Completed', 
+            'index': 6} 
     }
-    numTasks = 7
-    task6 = {
+    num_tasks = 6
+    return_can = {
         'S': None,
         'W': None,
         'Done': 'W',
-        'label': subtaskName[6],
-        'next': subtaskName[7]
+        'current': 'return_can',
+        'next': 'Done'
     }
-    task5 = {
+    rinse_can = {
         'P3': None,
         'W': None,
-        'S': task6,
-        'label': subtaskName[5],
-        'next': subtaskName[6]
+        'S': return_can,
+        'current': 'rinse_can',
+        'next': 'return_can'
     }
-    task4 = {
+    water_plant3 = {
         'P2': None,
         'W': None,
-        'P3': task5,
-        'label': subtaskName[4],
-        'next': subtaskName[5]
+        'P3': rinse_can,
+        'current': 'water_plant3',
+        'next': 'rinse_can'
     }
-    task3 = {
-        'P1': None,
-        'W': None,
-        'P2': task4,
-        'label': subtaskName[3],
-        'next': subtaskName[4]
-    }
-    task2 = {
+    water_plant2 = {
         'S': None,
         'W': None,
-        'P1': task3,
-        'label': subtaskName[2],
-        'next': subtaskName[3]
+        'P2': water_plant3,
+        'current': 'water_plant2',
+        'next': 'water_plant3'
     }
-    task1 = {
+    fill_water = {
         'W': None,
-        'S': task2,
-        'label': subtaskName[1],
-        'next': subtaskName[2]
+        'S': water_plant2,
+        'current': 'fill_water',
+        'next': 'water_plant2'
     }
     taskStart = {
-        'W': task1,
-        'label': subtaskName[0],
-        'next': subtaskName[1]
+        'W': fill_water,
+        'current': 'retrieve_water',
+        'next': 'fill_water'
     }
 
 class WalkDogDag(object):
-    subtaskName = {
-        0: 'Retrieve Umbrella',
-        1: 'Retrieve Leash',
-        2: 'Retrieve Keys',
-        3: 'Leash Dog',
-        4: 'Exit',
-        5: 'Completed'
+    subtask = {
+        'retrieve_umbrella': {
+            'label': 'Retrieve Umbrella',
+            'index': 0},
+        'retrieve_leash': {
+            'label': 'Retrieve Leash',
+            'index': 1},
+        'retrieve_keys': {
+            'label': 'Retrieve Keys',
+            'index': 2},
+        'leash_dog': {
+            'label': 'Leash Dog',
+            'index': 3},
+        'exit_house': {
+            'label': 'Exit',
+            'index': 4},
+        'Done': {
+            'label': 'Completed',
+            'index': 5}
     }
-    numTasks = 5
-    task4 = {
+    num_tasks = 5
+    exit_house = {
         'U': None,
         'L': None,
         'K': None,
         'D': None,
         'DR': None,
         'Done': 'DR',
-        'label': subtaskName[4],
-        'next': subtaskName[5]
+        'current': 'exit_house',
+        'next': 'Done'
     }
-    task3 = {
+    leash_dog = {
         'U': None,
         'L': None,
         'K': None,
-        'D': task4,
-        'label': subtaskName[3],
-        'next': subtaskName[4]
+        'D': exit_house,
+        'current': 'leash_dog',
+        'next': 'exit_house'
     }
-    task2 = {
+    retrieve_keys = {
         'U': None,
         'L': None,
-        'K': task3,
-        'label': subtaskName[2],
-        'next': subtaskName[3]
+        'K': leash_dog,
+        'current': 'retrieve_keys',
+        'next': 'leash_dog'
     }
-    task1 = {
+    retrieve_leash = {
         'U': None,
-        'L': task2,
-        'label': subtaskName[1],
-        'next': subtaskName[2]
+        'L': retrieve_keys,
+        'current': 'retrieve_leash',
+        'next': 'retrieve_keys'
     }
     taskStart = {
-        'U': task1,
-        'label': subtaskName[0],
-        'next': subtaskName[1]
+        'U': retrieve_leash,
+        'current': 'retrieve_umbrella',
+        'next': 'retrieve_leash'
     }
 
 class TakeMedicationDag(object):
-    subtaskName = {
-        0: 'Retrieve Food',
-        1: 'Retrieve Cup',
-        2: 'Fill Cup',
-        3: 'Retrieve Medication',
-        4: 'Sit Chair',
-        5: 'Eat Food',
-        6: 'Take Medication',
-        7: 'Drink Water',
-        8: 'Stand Up',
-        9: 'Return Medication',
-        10: 'Rinse Cup',
-        11: 'Throw Garbage',
-        12: 'Completed'
+    subtask = {
+        'retrieve_food': {
+            'label': 'Retrieve Food',
+            'index': 0},
+        'retrieve_cup': {
+            'label': 'Retrieve Cup',
+            'index': 1},
+        'fill_cup': {
+            'label': 'Fill Cup',
+            'index': 2},
+        'retrieve_med': {
+            'label': 'Retrieve Medication',
+            'index': 3},
+        'sit_chair': {
+            'label': 'Sit Chair',
+            'index': 4},
+        'eat_food': {
+            'label': 'Eat Food',
+            'index': 5},
+        'take_med': {
+            'label': 'Take Medication',
+            'index': 6},
+        'drink_water': {
+            'label': 'Drink Water',
+            'index': 7},
+        'stand_up': {
+            'label': 'Stand Up',
+            'index': 8},
+        'return_med': {
+            'label': 'Return Medication',
+            'index': 9},
+        'rinse_cup': {
+            'label': 'Rinse Cup',
+            'index': 10},
+        'throw_garbage': {
+            'label': 'Throw Garbage',
+            'index': 11},
+        'Done': {
+            'label': 'Completed',
+            'index': 12}
     }
-    numTasks = 12
-    task11 = {
+    num_tasks = 12
+    throw_garbage = {
         'S': None,
         'F': None,
         'C': None,
         'G': None,
         'Done': 'G',
-        'label': subtaskName[11],
-        'next': subtaskName[12]
+        'current': 'throw_garbage',
+        'next': 'Done'
     }
-    task10 = {
+    rinse_cup = {
         'M': None,
         'F': None,
         'C': None,
-        'S': task11,
-        'label': subtaskName[10],
-        'next': subtaskName[11]
+        'S': throw_garbage,
+        'current': 'rinse_cup',
+        'next': 'throw_garbage'
     }
-    task9 = {
+    return_med = {
         'CH': None,
         'F': None,
         'C': None,
-        'M': task10,
-        'label': subtaskName[9],
-        'next': subtaskName[10]
+        'M': rinse_cup,
+        'current': 'return_med',
+        'next': 'rinse_cup'
     }
-    task8 = {
+    stand_up = {
         'F': None,
         'M': None,
         'C': None,
-        'CH': task9,
-        'label': subtaskName[8],
-        'next': subtaskName[9]
+        'CH': return_med,
+        'current': 'stand_up',
+        'next': 'return_med'
     }
-    task7 = {
+    drink_water = {
         'F': None,
         'M': None,
-        'C': task8,
-        'label': subtaskName[7],
-        'next': subtaskName[8]
+        'C': stand_up,
+        'current': 'drink_water',
+        'next': 'stand_up'
     }
-    task6 = {
+    take_med = {
         'F': None,
         'C': None,
-        'M': task7,
-        'label': subtaskName[6],
-        'next': subtaskName[7]
+        'M': drink_water,
+        'current': 'take_med',
+        'next': 'drink_water'
     }
-    task5 = {
+    eat_food = {
         'C': None,
         'CH': None,
-        'F': task6,
-        'label': subtaskName[5],
-        'next': subtaskName[6]
+        'F': take_med,
+        'current': 'eat_food',
+        'next': 'take_med'
     }
-    task4 = {
+    sit_chair = {
         'M': None,
         'C': None,
         'F': None,
-        'CH': task5,
-        'label': subtaskName[4],
-        'next': subtaskName[5]
+        'CH': eat_food,
+        'current': 'sit_chair',
+        'next': 'eat_food'
     }
-    task3 = {
+    retrieve_med = {
         'F': None,
         'C': None,
         'S': None,
-        'M': task4,
-        'label': subtaskName[3],
-        'next': subtaskName[4]
+        'M': sit_chair,
+        'current': 'retrieve_med',
+        'next': 'sit_chair'
     }
-    task2 = {
+    fill_cup = {
         'F': None,
         'C': None,
-        'S': task3,
-        'label': subtaskName[2],
-        'next': subtaskName[3]
+        'S': retrieve_med,
+        'current': 'fill_cup',
+        'next': 'retrieve_med'
     }
-    ''' cup->sink->food '''
-    task2_1 = {
-        'C': None,
-        'S': None,
-        'F': task3,
-        'label': subtaskName[0],
-        'next': subtaskName[3]
-    }
-    ''' cup->sink '''
-    task1_2_2 = {
-        'C': None,
-        'S': task2_1,
-        'label': subtaskName[2],
-        'next': subtaskName[0]
-    }
-    ''' cup->food '''
-    task1_2_1 = {
-        'C': None,
-        'F': task2,
-        'label': subtaskName[0],
-        'next': subtaskName[2]
-    }
-    ''' cup->Y '''
-    task1_2 = {
-        'Y': [task1_2_1, task1_2_2]
-    }
-    ''' food->cup '''
-    task1_1 = {
+    retrieve_cup = {
         'F': None,
-        'C': task2,
-        'label': subtaskName[1],
-        'next': subtaskName[2]
+        'C': fill_cup,
+        'current': 'retrieve_cup',
+        'next': 'fill_cup'
     }
-    ''' starts with retrieving cup '''
-    taskStart_2 = {
-        'C': task1_2,
-        'label': subtaskName[1],
-        'next': subtaskName[0]
-    }
-    ''' starts with retrieving food '''
-    taskStart_1 = {
-        'F': task1_1,
-        'label': subtaskName[0],
-        'next': subtaskName[1]
-    }
-    ''' start->Y '''
     taskStart = {
-        'Y': [taskStart_1, taskStart_2]
+        'F': retrieve_cup,
+        'current': 'retrieve_food',
+        'next': 'retrieve_cup'
     }
 
 
 if __name__ == '__main__':
     w = WaterPlantsDag()
-    print(w.task1['W'])
-    print(w.task1['S']['P1']['P2']['P3']['S']['Done'])
+    print(w.fill_water['current'])
+    print(w.fill_water['S']['P2']['P3']['S']['Done'])
 
     wd = WalkDogDag()
-    print(wd.task1['U'])
-    print(wd.task1['L']['K']['D']['DR'])
+    print(wd.retrieve_leash['L']['next'])
+    print(wd.retrieve_leash['L']['K']['D']['Done'])
