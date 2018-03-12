@@ -21,21 +21,17 @@ from ras_msgs.srv import TaskController, TaskControllerResponse
 
 class ErrorDetector:
 
-    def __init__(self):
+    def __init__(self, test=False):
         rospy.loginfo("Initializing Error Detector")
 
         rospack = rospkg.RosPack()
         pkg_path = rospack.get_path('adl_error_detection')
 
+        self.test = test
         self.task_number = None
-        self.task_status = TaskStatus()
-        self.task_status.status = TaskStatus.PENDING
-        self.task_status.text = "PENDING"
-
-        # start task rosservice server
-        self.task_controller_srv = rospy.Service(
-            'task_controller', TaskController,
-            self.task_controller)
+        self.task_status = TaskStatus(
+            status=TaskStatus.PENDING,
+            text="PENDING")
 
         config = configparser.ConfigParser()
         config.read(pkg_path + "/scripts/casas.cfg")
@@ -52,9 +48,22 @@ class ErrorDetector:
             amqp_ssl=default.getboolean('AmqpSSL'),
             translations=self.translate)
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
+        self.rcon.set_on_connect_callback(self.casas_on_connect)
+
+        self.casas_setup_exchange()
 
         #self.do_error = SimpleActionClient("do_error", DoErrorAction)
         #self.do_error.wait_for_server(rospy.Duration(3))
+
+    def casas_on_connect(self):
+        self.ros_setup()
+
+    def ros_setup(self):
+        # start task rosservice server
+        self.task_service = rospy.Service(
+            'task_controller', TaskController,
+             self.task_controller)
+        rospy.loginfo("task_controller service running")
 
     def task_controller(self, request):
         response = TaskStatus(
@@ -83,7 +92,7 @@ class ErrorDetector:
         response.text = "FAILED"        
         return TaskControllerResponse(response)
 
-    def casas_setup_exchange(self, test=False):
+    def casas_setup_exchange(self):
         self.rcon.setup_subscribe_to_exchange(
             exchange_name='all.events.testbed.casas',
             exchange_type='topic',
@@ -91,7 +100,7 @@ class ErrorDetector:
             exchange_durable=True,
             casas_events=True,
             callback_function=self.casas_callback)
-        if test:
+        if self.test:
             self.rcon.setup_subscribe_to_exchange(
                 exchange_name='test.events.testbed.casas',
                 exchange_type='topic',
@@ -101,8 +110,12 @@ class ErrorDetector:
                 callback_function=self.casas_callback)
 
     def casas_callback(self, sensors):
-        for sensor in sensors:
-            rospy.loginfo("{}\t{}\t{}".format(str(sensor.stamp), str(sensor.target), str(sensor.message)))
+        if self.task_status.status == TaskStatus.ACTIVE:
+            for sensor in sensors:
+                rospy.loginfo("{}\t{}\t{}".format(
+                    str(sensor.stamp), 
+                    str(sensor.target), 
+                    str(sensor.message)))
 
     def casas_run(self):
         try:
@@ -120,7 +133,6 @@ class ErrorDetector:
 
 if __name__ == "__main__":
     rospy.init_node("error_detector", disable_signals=True)
-    ed = ErrorDetector()
-    ed.casas_setup_exchange(test=True)
+    ed = ErrorDetector(test=True)
     ed.casas_run()
     rospy.on_shutdown(ed.stop)
