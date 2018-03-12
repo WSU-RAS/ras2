@@ -33,7 +33,7 @@ rosservice call /task_controller '{id: {stamp: now, task_number: 1}, request: {s
 ```
 
 Writing a ROS Service client code
-```
+```python
 #!/usr/bin/env python
 
 import rospy
