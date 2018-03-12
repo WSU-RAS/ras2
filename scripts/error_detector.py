@@ -12,9 +12,12 @@ from adl import check_sequence
 from adl.util import Items
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
+from adl.util import Task, Goal
 from casas import objects, rabbitmq
 
 from ras_msgs.msg import DoErrorAction, DoErrorActionGoal
+from ras_msgs.msg import TaskStatus
+from ras_msgs.srv import TaskController, TaskControllerResponse
 
 class ErrorDetector:
 
@@ -23,6 +26,16 @@ class ErrorDetector:
 
         rospack = rospkg.RosPack()
         pkg_path = rospack.get_path('adl_error_detection')
+
+        self.task_number = None
+        self.task_status = TaskStatus()
+        self.task_status.status = TaskStatus.PENDING
+        self.task_status.text = "PENDING"
+
+        # start task rosservice server
+        self.task_controller_srv = rospy.Service(
+            'task_controller', TaskController,
+            self.task_controller)
 
         config = configparser.ConfigParser()
         config.read(pkg_path + "/scripts/casas.cfg")
@@ -42,6 +55,33 @@ class ErrorDetector:
 
         #self.do_error = SimpleActionClient("do_error", DoErrorAction)
         #self.do_error.wait_for_server(rospy.Duration(3))
+
+    def task_controller(self, request):
+        response = TaskStatus(
+            status=TaskStatus.SUCCESS,
+            text="SUCCESS")
+        if request.id.task_number < Task.size:
+            if self.task_number is None \
+               and request.request.status == TaskStatus.START \
+               and self.task_status.status == TaskStatus.PENDING:
+                self.task_number = request.id.task_number
+                self.task_status.status = TaskStatus.ACTIVE
+                self.task_status.text = "ACTIVE"
+                rospy.loginfo("{}: START".format(Task.types[self.task_number]))
+                return TaskControllerResponse(response)
+            elif self.task_number == request.id.task_number \
+               and request.request.status == TaskStatus.END \
+               and self.task_status.status == TaskStatus.ACTIVE:
+                self.task_number = None
+                self.task_status.status = TaskStatus.PENDING
+                self.task_status.text = "PENDING"
+                rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
+                return TaskControllerResponse(response)
+
+        rospy.logwarn("Invalid task request")
+        response.status = TaskStatus.FAILED
+        response.text = "FAILED"        
+        return TaskControllerResponse(response)
 
     def casas_setup_exchange(self, test=False):
         self.rcon.setup_subscribe_to_exchange(
@@ -70,13 +110,7 @@ class ErrorDetector:
         except KeyboardInterrupt:
             self.stop()
 
-    def start_task(self, task_number):
-        pass
-
     def detect_error(self):
-        pass
-
-    def stop_task(self):
         pass
 
     def stop(self):
