@@ -31,7 +31,7 @@ class ErrorDetector:
         self.task_number = None
         self.task_status = TaskStatus(
             status=TaskStatus.PENDING,
-            text="PENDING")
+            text='PENDING')
 
         config = configparser.ConfigParser()
         config.read(pkg_path + "/scripts/casas.cfg")
@@ -68,7 +68,7 @@ class ErrorDetector:
     def task_controller(self, request):
         response = TaskStatus(
             status=TaskStatus.SUCCESS,
-            text="SUCCESS")
+            text='SUCCESS')
         if request.id.task_number < Task.size:
             if self.task_number is None \
                and request.request.status == TaskStatus.START \
