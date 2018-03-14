@@ -33,17 +33,20 @@ class GotoServer:
         # if the goal is to go to base
         if Goal.type == 0:
             rospy.loginfo("Initiating movement to base")
+            rospy.init_node("goto_object_state_machine")
+            sm_gotoobject = GotoObjectSMACH()
+            sm_gotoobject.execute(task_number = goal.task_number, error_step = goal.error_step, base = True )
         # if the goal is to goto human
         elif Goal.type == 1:
             rospy.loginfo("Initiating FindPerson State Machine")
             rospy.init_node("find_person_state_machine")
             sm_findperson = FindPersonSMACH()
             sm_findperson.execute(task_number = goal.task_number, error_step = goal.error_step)
-        elif Goal.type == 2:
+        elif Goal.type == 2 :
             rospy.loginfo("Initiating GotoObject State Machine")
             rospy.init_node("goto_object_state_machine")
             sm_gotoobject = GotoObjectSMACH()
-            sm_gotoobject.execute(task_number = goal.task_number, error_step = goal.error_step)
+            sm_gotoobject.execute(task_number = goal.task_number, error_step = goal.error_step, base = False )
 
         goto_feedback = GotoFeedback()
         while True:

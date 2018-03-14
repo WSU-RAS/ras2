@@ -29,60 +29,58 @@ class FindObjectState(smach.State):
     def __init__(self):
         smach.State.__init__(
             self,
-            outcomes = ['success', 'fail']
-            input_keys = ['task_number_in', 'error_step_in']
+            outcomes = ['success', 'fail'],
+            input_keys = ['task_number_in', 'error_step_in', 'base_in'],
             output_keys = ['position_x_out', 'position_y_out']
         )
         self.rate = rospy.Rate(10)
-    #
-    # def done_cb(self, terminal_state, result):
-    #     if terminal_state = GoalStatus.SUCCEEDED and result.found:
-    #         self.success = True
-    #     self.is_running = False
+
 
     def execute(self, userdata):
         rospy.loginfo("Executing state Findobject")
         self.success = False
         self.is_running = True
 
-        # define the goal
         # according to the task number and error step the object needs to be queried
-        # to map these task numbers with the objects to find
 
-        # Water plants
-        if userdata.task_number_in == 0:
-            if userdata.error_step_in == 0 or 1 or 4 or 5:
-                object_to_find = 'watercan'
-            elif userdata.error_step_in == 2:
-                object_to_find = 'plantcoffee'
-            elif userdata.error_step_in == 3:
-                object_to_find = "plantside"
-        # Take Meds
-        elif userdata.task_number_in == 1:
-            if userdata.error_step_in == 0 or 5 or 11:
-                object_to_find = 'food'
-            elif userdata.error_step_in == 1 or 2 or 7 or 10:
-                object_to_find = 'glass'
-            elif userdata.error_step_in == 3 or 6 or 9:
-                object_to_find = 'pillbottle'
-        # Walk the dog
-        elif userdata.task_number_in == 2:
-            if userdata.error_step_in == 0:
-                object_to_find = 'umbrella'
-            elif userdata.error_step_in == 1:
-                object_to_find = 'leash'
-            elif userdata.error_step_in == 2:
-                object_to_find = 'keys'
-            elif userdata.error_step_in == 3:
-                object_to_find = 'dog'
+        if userdata.base_in == True:
+            object_to_find = 'base'
+
+        else:
+            # Water plants
+            if userdata.task_number_in == 0:
+                if userdata.error_step_in == 0 or 1 or 4 or 5:
+                    object_to_find = 'watercan'
+                elif userdata.error_step_in == 2:
+                    object_to_find = 'plantcoffee'
+                elif userdata.error_step_in == 3:
+                    object_to_find = "plantside"
+            # Take Meds
+            elif userdata.task_number_in == 1:
+                if userdata.error_step_in == 0 or 5 or 11:
+                    object_to_find = 'food'
+                elif userdata.error_step_in == 1 or 2 or 7 or 10:
+                    object_to_find = 'glass'
+                elif userdata.error_step_in == 3 or 6 or 9:
+                    object_to_find = 'pillbottle'
+            # Walk the dog
+            elif userdata.task_number_in == 2:
+                if userdata.error_step_in == 0:
+                    object_to_find = 'umbrella'
+                elif userdata.error_step_in == 1:
+                    object_to_find = 'leash'
+                elif userdata.error_step_in == 2:
+                    object_to_find = 'keys'
+                elif userdata.error_step_in == 3:
+                    object_to_find = 'dog'
 
 
         data = self.getObjectLocation(object_to_find)
 
-        if (data.locations != 0):
-            userdata.position_x_out = data[0].x
-            userdata.position_y_out = data[0].y
-            rospy.loginfo("Object {} found at x = {} y = {}".format(object_to_find, data[0].x, data[0].y))
+        if len(data.locations) != 0:
+            userdata.position_x_out = data.locations[0].x
+            userdata.position_y_out = data.locations[0].y
+            rospy.loginfo("Object {} found at x = {} y = {}".format(object_to_find, data.locations[0].x, data.locations[0].y))
             return "success"
         else:
             rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
@@ -165,6 +163,7 @@ class GotoObjectSMACH():
                     remapping = {
                         'task_number_in' : 'task_number'
                         'error_step_in' : 'error_step'
+                        'base_in' : 'base'
                         'position_x_out' : 'sm_pose_x',
                         'position_y_out' : 'sm_pose_y'}
             )
