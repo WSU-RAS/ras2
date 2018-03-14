@@ -4,9 +4,9 @@
     <arg name="gui" default="false" />
 
     <!-- Manager -->
-    <node name="manager" pkg="scheduler" type="manager.py" />
-    <node name="goto" pkg="scheduler" type="goto.py" />
-    <node name="find_person_server" pkg="find_person" type="find_person_server.py" />
+    <node name="manager" pkg="scheduler" type="manager.py" output="screen" />
+    <node name="goto" pkg="scheduler" type="goto.py" output="screen" />
+    <node name="find_person_server" pkg="find_person" type="find_person_server.py" output="screen" />
 
     <!-- Navigation -->
     <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
@@ -16,6 +16,5 @@
 
     <!-- Tablet / experimenter interface -->
     <include file="$(find tablet_interface)/launch/web.launch" />
-    <node name="tablet_response" pkg="tablet_interface" type="tablet_response.py" />
-    <node name="task_name" pkg="tablet_interface" type="task_name.py" />
+    <node name="task_name" pkg="tablet_interface" type="task_name.py" output="screen" />
 </launch>
