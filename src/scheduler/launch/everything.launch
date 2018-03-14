@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="new_map" default="false" />
+    <arg name="gui" default="false" />
+
+    <!-- Manager -->
+    <node name="manager" pkg="scheduler" type="manager.py" />
+    <node name="goto" pkg="scheduler" type="goto.py" />
+    <node name="find_person_server" pkg="find_person" type="find_person_server.py" />
+
+    <!-- Navigation -->
+    <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+        <arg name="new_map" value="$(arg new_map)" />
+        <arg name="gui" value="$(arg gui)" />
+    </include>
+
+    <!-- Tablet / experimenter interface -->
+    <include file="$(find tablet_interface)/launch/web.launch" />
+    <node name="tablet_response" pkg="tablet_interface" type="tablet_response.py" />
+    <node name="task_name" pkg="tablet_interface" type="task_name.py" />
+</launch>
