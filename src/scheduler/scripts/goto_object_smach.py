@@ -161,9 +161,9 @@ class GotoObjectSMACH():
                     'success': 'GOTO_XY',
                     'fail' : 'error'},
                     remapping = {
-                        'task_number_in' : 'task_number'
-                        'error_step_in' : 'error_step'
-                        'base_in' : 'base'
+                        'task_number_in' : 'task_number',
+                        'error_step_in' : 'error_step',
+                        'base_in' : 'base',
                         'position_x_out' : 'sm_pose_x',
                         'position_y_out' : 'sm_pose_y'}
             )
@@ -172,15 +172,15 @@ class GotoObjectSMACH():
                 'GOTO_XY',
                 GotoXYState(),
                 transitions = {
-                    'success': 'finish'
-                    'fail' : 'error'
+                    'success': 'finish',
+                    'fail' : 'error',
                     'preempted' : 'error'},
                 remapping = {
-                    'position_x_in' : 'sm_pose_x'
+                    'position_x_in' : 'sm_pose_x',
                     'position_y_in' : 'sm_pose_y'})
 
-                    outcome = sm.execute()
-                    return outcome
+        outcome = sm.execute()
+        return outcome
 
 if __name__ == '__main__':
     rospy.init_node("goto_object_state_machine")
