@@ -169,4 +169,3 @@ if __name__ == '__main__':
 	sm_findperson = FindPersonSMACH()
 	sm_findperson.execute()
 	rospy.signal_shutdown('All done.')
-

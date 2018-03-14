@@ -6,6 +6,11 @@ from actionlib import SimpleActionServer
 from ras_msgs.msg import GotoAction, GotoFeedback, GotoResult
 from adl.util import Goal, Task
 
+import smach_ros
+import smach
+
+from findperson_smach import FindPersonSMACH
+from goto_object_smach import GotoObjectSMACH
 
 class GotoServer:
 
@@ -25,6 +30,20 @@ class GotoServer:
         rospy.loginfo("Executing {} for {}".format(
             Goal.types[goal.type], Task.types[goal.task_number]))
         rospy.loginfo("error_step={}  error_object={}".format(goal.error_step, goal.error_object))
+        # if the goal is to go to base
+        if Goal.type == 0:
+            rospy.loginfo("Initiating movement to base")
+        # if the goal is to goto human
+        elif Goal.type == 1:
+            rospy.loginfo("Initiating FindPerson State Machine")
+            rospy.init_node("find_person_state_machine")
+            sm_findperson = FindPersonSMACH()
+            sm_findperson.execute(task_number = goal.task_number, error_step = goal.error_step)
+        elif Goal.type == 2:
+            rospy.loginfo("Initiating GotoObject State Machine")
+            rospy.init_node("goto_object_state_machine")
+            sm_gotoobject = GotoObjectSMACH()
+            sm_gotoobject.execute(task_number = goal.task_number, error_step = goal.error_step)
 
         goto_feedback = GotoFeedback()
         while True:
