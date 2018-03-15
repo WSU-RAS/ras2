@@ -74,6 +74,7 @@ class GotoXYState(smach.State):
 			outcomes=['success', 'fail', 'preempted'],
 			input_keys=['position_x_in', 'position_y_in'])
 
+		self.rate = rospy.Rate(10)
 		self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
 
 		rospy.loginfo("Waiting for the move_base action server")
@@ -97,7 +98,7 @@ class GotoXYState(smach.State):
 
 		self.success = False
 		self.is_running = True
-		self.move_base.send_goal(goal)
+		self.move_base.send_goal(goal, done_cb=self.done_cb)
 
 		start_time = rospy.Time.now()
 		timeout = rospy.Duration(secs=60, nsecs=0)

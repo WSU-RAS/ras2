@@ -16,15 +16,16 @@ import time
 
 class FindObjectState(smach.State):
 
-    def getObjectLocation(name):
-        try:
-            query = rospy.ServiceProxy("query_object", ObjectQuery)
-            result = query(name)
-            return result.locations
-        except rospy.ServiceException, e:
-            rospy.roserr("Service call failed: %s" % e)
-            return None
+    def getObjectLocation(self, name):
+            rospy.wait_for_service("query_objects")
 
+            try:
+                    query = rospy.ServiceProxy("query_objects", ObjectQuery)
+                    result = query(name)
+                    return result.locations
+            except rospy.ServiceException, e:
+                    rospy.logerr("Service call failed: %s" % e)
+            return None
 
     def __init__(self):
         smach.State.__init__(
@@ -77,10 +78,10 @@ class FindObjectState(smach.State):
 
         data = self.getObjectLocation(object_to_find)
 
-        if len(data.locations) != 0:
-            userdata.position_x_out = data.locations[0].x
-            userdata.position_y_out = data.locations[0].y
-            rospy.loginfo("Object {} found at x = {} y = {}".format(object_to_find, data.locations[0].x, data.locations[0].y))
+        if data is not None and len(data) != 0:
+            userdata.position_x_out = data[0].x
+            userdata.position_y_out = data[0].y
+            rospy.loginfo("Object {} found at x = {} y = {}".format(object_to_find, data[0].x, data[0].y))
             return "success"
         else:
             rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
@@ -94,6 +95,7 @@ class GotoXYState(smach.State):
             outcomes = ['success', 'fail', 'preempted'],
             input_keys = ['position_x_in', 'position_y_in'])
 
+        self.rate = rospy.Rate(10)
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
 
         rospy.loginfo("Waiting for the move_base server to be connected")
@@ -108,7 +110,7 @@ class GotoXYState(smach.State):
         rospy.loginfo("Executing State GotoXY")
 
         rospy.loginfo("Goto x = {} y = {}".format(userdata.position_x_in, userdata.position_y_in))
-        goal = MoveBaseGoal
+        goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = userdata.position_x_in
@@ -120,7 +122,7 @@ class GotoXYState(smach.State):
         self.is_running = True
         self.move_base.send_goal(goal)
 
-        start_time = rospy,Time.now()
+        start_time = rospy.Time.now()
         timeout = rospy.Duration(secs = 60)
         while self.is_running and rospy.Time.now() - start_time < timeout:
             if self.preempt_requested():
@@ -145,16 +147,17 @@ class GotoObjectSMACH():
     def __init__(self):
         pass
 
-    def execute(self, task_number, error_step):
+    def execute(self, task_number, error_step, base):
 
         sm = smach.StateMachine(outcomes = ['finish', 'error'])
         sm.userdata.task_number = task_number
         sm.userdata.error_step = error_step
         sm.userdata.sm_pose_x = 0
         sm.userdata.sm_pose_y = 0
+        sm.userdata.base = base
 
         with sm:
-            StateMachine.add(
+            smach.StateMachine.add(
                 'FIND_OBJECT',
                 FindObjectState(),
                 transitions = {
