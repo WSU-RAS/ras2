@@ -60,23 +60,23 @@ class TestErrorDetector:
         rospy.loginfo("test_task_controller service running")
 
     def start_task(self, task_number=None):
-        rospy.wait_for_service("task_controller")
         try:
+            rospy.wait_for_service('task_controller', timeout=2.0)
             start = rospy.ServiceProxy('task_controller', TaskController)
             task_id = TaskId(stamp=rospy.Time.now(), task_number=task_number)
             request = TaskStatus(status=TaskStatus.START)
             response = start(task_id, request)
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.ROSException), e:
             rospy.logerr("Service call failed: {}".format(e))
 
     def end_task(self, task_number=None):
-        rospy.wait_for_service("task_controller")
         try:
+            rospy.wait_for_service('task_controller', timeout=2.0)
             end = rospy.ServiceProxy('task_controller', TaskController)
             task_id = TaskId(stamp=rospy.Time.now(), task_number=task_number)
             request = TaskStatus(status=TaskStatus.END)
             response = end(task_id, request)
-        except rospy.ServiceException, e:
+        except (rospy.ServiceException, rospy.ROSException), e:
             rospy.logerr("Service call failed: {}".format(e))
 
     def load_test_events(self, file_name):

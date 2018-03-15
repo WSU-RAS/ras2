@@ -9,7 +9,7 @@ import configparser
 from actionlib import SimpleActionClient
 from collections import defaultdict
 from adl import check_sequence
-from adl.util import Items
+from adl.util import Items, TaskToDag
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
 from adl.util import Task, Goal
@@ -32,6 +32,7 @@ class ErrorDetector:
         self.task_status = TaskStatus(
             status=TaskStatus.PENDING,
             text='PENDING')
+        self.task_sequence = []
 
         config = configparser.ConfigParser()
         config.read(pkg_path + "/scripts/casas.cfg")
@@ -73,6 +74,7 @@ class ErrorDetector:
             if self.task_number is None \
                and request.request.status == TaskStatus.START \
                and self.task_status.status == TaskStatus.PENDING:
+                self.task_sequence = []
                 self.task_number = request.id.task_number
                 self.task_status.status = TaskStatus.ACTIVE
                 self.task_status.text = "ACTIVE"
@@ -116,6 +118,15 @@ class ErrorDetector:
                     str(sensor.stamp), 
                     str(sensor.target), 
                     str(sensor.message)))
+                if sensor.message == 'MOVED':
+                    code = Items.encode[sensor.target[:-2]][1]
+                    self.task_sequence.append(code)
+            rospy.loginfo("seq:{}".format("-".join(self.task_sequence)))
+            check_status = check_sequence(
+                TaskToDag.mapping[self.task_number].task_start,
+                seq=self.task_sequence,
+                task_num=TaskToDag.mapping[self.task_number].num_tasks)
+            rospy.loginfo("status:{}".format(check_status))
 
     def casas_run(self):
         try:
