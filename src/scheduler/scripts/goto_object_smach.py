@@ -50,7 +50,7 @@ class FindObjectState(smach.State):
         else:
             # Water plants
             if userdata.task_number_in == 0:
-                if userdata.error_step_in == 0 or 1 or 4 or 5:
+                if userdata.error_step_in in [0, 1, 4, 5]:
                     object_to_find = 'watercan'
                 elif userdata.error_step_in == 2:
                     object_to_find = 'plantcoffee'
@@ -58,11 +58,11 @@ class FindObjectState(smach.State):
                     object_to_find = "plantside"
             # Take Meds
             elif userdata.task_number_in == 1:
-                if userdata.error_step_in == 0 or 5 or 11:
+                if userdata.error_step_in in [0, 5, 11]:
                     object_to_find = 'food'
-                elif userdata.error_step_in == 1 or 2 or 7 or 10:
+                elif userdata.error_step_in == [1, 2, 7, 10]:
                     object_to_find = 'glass'
-                elif userdata.error_step_in == 3 or 6 or 9:
+                elif userdata.error_step_in == [3, 6, 9]:
                     object_to_find = 'pillbottle'
             # Walk the dog
             elif userdata.task_number_in == 2:

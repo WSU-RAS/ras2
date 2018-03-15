@@ -65,7 +65,7 @@ class SchedulerServer:
         # Water plants
         if task_number == 0:
            video_full_url = basename + 'waterplants.all.mp4'
-           if error_step == 0 or 1 or 4 or 5:
+           if error_step in [0, 1, 4, 5]:
                video_step_url = basename + 'waterplants.error1.mp4'
                object_to_find = 'watercan'
            elif error_step == 2:
@@ -77,13 +77,13 @@ class SchedulerServer:
         # Take Meds
         elif task_number == 1:
             video_full_url = basename + 'takemedication.all.mp4'
-            if error_step == 0 or 5 or 11:
+            if error_step in [0, 5, 11]:
                 video_step_url = basename + 'takemedication.error1.mp4'
                 object_to_find = 'food'
-            elif error_step == 1 or 2 or 7 or 10:
+            elif error_step in [1, 2, 7, 10]:
                 video_step_url = basename + 'takemedication.error2.mp4'
                 object_to_find = 'glass'
-            elif error_step == 3 or 6 or 9:
+            elif error_step in [3, 6, 9]:
                 video_step_url = basename + 'takemedication.error3.mp4'
                 object_to_find = 'pillbottle'
         # Walk the dog
