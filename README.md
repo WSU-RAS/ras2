@@ -30,7 +30,7 @@ Adding a new submodule:
 
 Updating all submodules to the latest commit on origin:
 
-    git pull --recurse-submodules && git submodule update --recursive
+    git submodule foreach 'git fetch origin --tags; git checkout master; git pull' && git pull && git submodule update --init --recursive
 
 Initializing newly added submodules (e.g. somebody else adds one):
 
