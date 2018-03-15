@@ -30,8 +30,7 @@ Adding a new submodule:
 
 Updating all submodules to the latest commit on origin:
 
-    git pull --recurse-submodules
-    git submodule update --recursive --remote
+    git pull --recurse-submodules && git submodule update --recursive
 
 Initializing newly added submodules (e.g. somebody else adds one):
 
