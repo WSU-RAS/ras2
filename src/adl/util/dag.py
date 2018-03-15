@@ -14,29 +14,25 @@ DR  door
 
 class WaterPlantsDag(object):
     subtask = {
-        'retrive_water': {
-            'label': 'Retrieve Water can', 
-            'index': 0},
-        'fill_water': {
-            'label': 'Fill Water can', 
-            'index': 1},
-        'water_plant2': {
-            'label': 'Water Coffee table plant', 
-            'index': 2},
-        'water_plant3': {
-            'label': 'Water Side table plant', 
-            'index': 3},
-        'rinse_can': {
-            'label': 'Rinse Water can', 
-            'index': 4},
-        'return_can': {
-            'label': 'Return Water can', 
-            'index': 5},
-        'Done': {
-            'label': 'Completed', 
-            'index': 6} 
+        'retrive_water': 0,
+        'fill_water': 1,
+        'water_plant2': 2,
+        'water_plant3': 3,
+        'rinse_can': 4,
+        'return_can': 5,
+        'Done': 6 
+    }
+    subtask_info = {
+        0: ('Retrieve water can', 'watercan'),
+        1: ('Fill water can', 'watercan'),
+        2: ('Water coffee table plant', 'plantcoffee'),
+        3: ('Water side table plant', 'plantside'),
+        4: ('Rinse water can', 'watercan'),
+        5: ('Return water can', 'watercan'),
+        6: ('Completed', None)
     }
     num_tasks = 6
+
     return_can = {
         'S': None,
         'W': None,
@@ -79,26 +75,23 @@ class WaterPlantsDag(object):
 
 class WalkDogDag(object):
     subtask = {
-        'retrieve_umbrella': {
-            'label': 'Retrieve Umbrella',
-            'index': 0},
-        'retrieve_leash': {
-            'label': 'Retrieve Leash',
-            'index': 1},
-        'retrieve_keys': {
-            'label': 'Retrieve Keys',
-            'index': 2},
-        'leash_dog': {
-            'label': 'Leash Dog',
-            'index': 3},
-        'exit_house': {
-            'label': 'Exit',
-            'index': 4},
-        'Done': {
-            'label': 'Completed',
-            'index': 5}
+        'retrieve_umbrella': 0,
+        'retrieve_leash': 1,
+        'retrieve_keys': 2,
+        'leash_dog': 3,
+        'exit_house': 4,
+        'Done': 5
+    }
+    subtask_info = {
+        0: ('Retrieve Umbrella', 'umbrella'),
+        1: ('Retrieve Leash', 'leash'),
+        2: ('Retrieve Keys', 'keys'),
+        3: ('Leash Dog', 'dog'),
+        4: ('Exit', None),
+        5: ('Completed', None)
     }
     num_tasks = 5
+
     exit_house = {
         'U': None,
         'L': None,
@@ -138,47 +131,37 @@ class WalkDogDag(object):
 
 class TakeMedicationDag(object):
     subtask = {
-        'retrieve_food': {
-            'label': 'Retrieve Food',
-            'index': 0},
-        'retrieve_cup': {
-            'label': 'Retrieve Cup',
-            'index': 1},
-        'fill_cup': {
-            'label': 'Fill Cup',
-            'index': 2},
-        'retrieve_med': {
-            'label': 'Retrieve Medication',
-            'index': 3},
-        'sit_chair': {
-            'label': 'Sit Chair',
-            'index': 4},
-        'eat_food': {
-            'label': 'Eat Food',
-            'index': 5},
-        'take_med': {
-            'label': 'Take Medication',
-            'index': 6},
-        'drink_water': {
-            'label': 'Drink Water',
-            'index': 7},
-        'stand_up': {
-            'label': 'Stand Up',
-            'index': 8},
-        'return_med': {
-            'label': 'Return Medication',
-            'index': 9},
-        'rinse_cup': {
-            'label': 'Rinse Cup',
-            'index': 10},
-        'throw_garbage': {
-            'label': 'Throw Garbage',
-            'index': 11},
-        'Done': {
-            'label': 'Completed',
-            'index': 12}
+        'retrieve_food': 0,
+        'retrieve_cup': 1,
+        'fill_cup': 2,
+        'retrieve_med': 3,
+        'sit_chair': 4,
+        'eat_food': 5,
+        'take_med': 6,
+        'drink_water': 7,
+        'stand_up': 8,
+        'return_med': 9,
+        'rinse_cup': 10,
+        'throw_garbage': 11,
+        'Done': 12
+    }
+    subtask_info = {
+        0: ('Retrieve food', 'food'),
+        1: ('Retrieve cup', 'glass'),
+        2: ('Fill cup', 'glass'),
+        3: ('Retrieve medication', 'pillbottle'),
+        4: ('Sit chair', None),
+        5: ('Eat food', 'food'),
+        6: ('Take medication', 'pillbottle'),
+        7: ('Drink water', 'glass'),
+        8: ('Stand up', None),
+        9: ('Return medication', 'pillbottle'),
+        10: ('Rinse cup', 'glass'),
+        11: ('Throw garbage', 'food'),
+        12: ('Completed', None)
     }
     num_tasks = 12
+
     throw_garbage = {
         'S': None,
         'F': None,
