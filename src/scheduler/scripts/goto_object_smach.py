@@ -5,27 +5,16 @@ import actionlib_msgs
 import actionlib
 import smach
 import smach_ros
-
+import time
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
 from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
-import time
+from adl.util import Task, WaterPlantsDag, WalkDogDag, TakeMedicationDag
 
 
 class FindObjectState(smach.State):
-
-    def getObjectLocation(self, name):
-            rospy.wait_for_service("query_objects")
-
-            try:
-                    query = rospy.ServiceProxy("query_objects", ObjectQuery)
-                    result = query(name)
-                    return result.locations
-            except rospy.ServiceException, e:
-                    rospy.logerr("Service call failed: %s" % e)
-            return None
 
     def __init__(self):
         smach.State.__init__(
@@ -35,7 +24,11 @@ class FindObjectState(smach.State):
             output_keys = ['position_x_out', 'position_y_out']
         )
         self.rate = rospy.Rate(10)
-
+        self.task_to_object = {
+            Task.WATER_PLANTS: WaterPlantsDag.subtask_info,
+            Task.TAKE_MEDS: TakeMedicationDag.subtask_info,
+            Task.WALK_DOG: WalkDogDag.subtask_info
+        }
 
     def execute(self, userdata):
         rospy.loginfo("Executing state Findobject")
@@ -43,41 +36,12 @@ class FindObjectState(smach.State):
         self.is_running = True
 
         # according to the task number and error step the object needs to be queried
-
         if userdata.base_in == True:
             object_to_find = 'base'
-
         else:
-            # Water plants
-            if userdata.task_number_in == 0:
-                if userdata.error_step_in in [0, 1, 4, 5]:
-                    object_to_find = 'watercan'
-                elif userdata.error_step_in == 2:
-                    object_to_find = 'plantcoffee'
-                elif userdata.error_step_in == 3:
-                    object_to_find = "plantside"
-            # Take Meds
-            elif userdata.task_number_in == 1:
-                if userdata.error_step_in in [0, 5, 11]:
-                    object_to_find = 'food'
-                elif userdata.error_step_in == [1, 2, 7, 10]:
-                    object_to_find = 'glass'
-                elif userdata.error_step_in == [3, 6, 9]:
-                    object_to_find = 'pillbottle'
-            # Walk the dog
-            elif userdata.task_number_in == 2:
-                if userdata.error_step_in == 0:
-                    object_to_find = 'umbrella'
-                elif userdata.error_step_in == 1:
-                    object_to_find = 'leash'
-                elif userdata.error_step_in == 2:
-                    object_to_find = 'keys'
-                elif userdata.error_step_in == 3:
-                    object_to_find = 'dog'
+            object_to_find = self.task_to_object[userdata.task_number_in][userdata.error_step_in][1]
 
-
-        data = self.getObjectLocation(object_to_find)
-
+        data = self.get_object_location(object_to_find)
         if data is not None and len(data) != 0:
             userdata.position_x_out = data[0].x
             userdata.position_y_out = data[0].y
@@ -86,6 +50,18 @@ class FindObjectState(smach.State):
         else:
             rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
             return "fail"
+
+    def get_object_location(self, name):
+            rospy.wait_for_service("query_objects")
+
+            try:
+                query = rospy.ServiceProxy("query_objects", ObjectQuery)
+                result = query(name)
+                return result.locations
+            except rospy.ServiceException, e:
+                rospy.logerr("Service call failed: %s" % e)
+            return None
+
 
 class GotoXYState(smach.State):
 
@@ -142,13 +118,13 @@ class GotoXYState(smach.State):
         smach.State.request_preempt(self)
         rospy.logwarn("GotoXYState Preempted")
 
+
 class GotoObjectSMACH():
 
     def __init__(self):
         pass
 
     def execute(self, task_number, error_step, base):
-
         sm = smach.StateMachine(outcomes = ['finish', 'error'])
         sm.userdata.task_number = task_number
         sm.userdata.error_step = error_step
@@ -184,6 +160,7 @@ class GotoObjectSMACH():
 
         outcome = sm.execute()
         return outcome
+
 
 if __name__ == '__main__':
     rospy.init_node("goto_object_state_machine")
