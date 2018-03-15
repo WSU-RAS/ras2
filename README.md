@@ -41,23 +41,23 @@ from ras_msgs.msg import TaskStatus, TaskId
 from ras_msgs.srv import TaskController
 
 def start_task(task_number):
-    rospy.wait_for_service('task_controller')
     try:
+        rospy.wait_for_service('task_controller')
         start = rospy.ServiceProxy('task_controller', TaskController)
-        id = TaskId(stamp=rospy.Time.now(), task_number=task_number)
+        task_id = TaskId(stamp=rospy.Time.now(), task_number=task_number)
         request = TaskStatus(status=TaskStatus.START)
-        response = start(id, request)
-    except rospy.ServiceException, e:
+        response = start(task_id, request)
+    except (rospy.ServiceException, rospy.ROSException), e:
         rospy.logerr("Service call failed: %s"%e)
 
 def end_task(task_number):
-    rospy.wait_for_service('task_controller')
     try:
+        rospy.wait_for_service('task_controller')
         end = rospy.ServiceProxy('task_controller', TaskController)
-        id = TaskId(stamp=rospy.Time.now(), task_number=task_number)
+        task_id = TaskId(stamp=rospy.Time.now(), task_number=task_number)
         request = TaskStatus(status=TaskStatus.END)
-        response = end(id, request)
-    except rospy.ServiceException, e:
+        response = end(task_id, request)
+    except (rospy.ServiceException, rospy.ROSException), e:
         rospy.logerr("Service call failed: %s"%e)
 ```
 
