@@ -11,7 +11,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
 from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
-from adl.util import Task, WaterPlantsDag, WalkDogDag, TakeMedicationDag
+from adl.util import Task, TaskToDag
 
 
 class FindObjectState(smach.State):
@@ -24,11 +24,6 @@ class FindObjectState(smach.State):
             output_keys = ['position_x_out', 'position_y_out']
         )
         self.rate = rospy.Rate(10)
-        self.task_to_object = {
-            Task.WATER_PLANTS: WaterPlantsDag.subtask_info,
-            Task.TAKE_MEDS: TakeMedicationDag.subtask_info,
-            Task.WALK_DOG: WalkDogDag.subtask_info
-        }
 
     def execute(self, userdata):
         rospy.loginfo("Executing state Findobject")
@@ -39,7 +34,7 @@ class FindObjectState(smach.State):
         if userdata.base_in == True:
             object_to_find = 'base'
         else:
-            object_to_find = self.task_to_object[userdata.task_number_in][userdata.error_step_in][1]
+            object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
 
         data = self.get_object_location(object_to_find)
         if data is not None and len(data) != 0:
