@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 
+from constants import Task
+from dag import WaterPlantsDag, TakeMedicationDag, WalkDogDag
+
 # Decode item numbers are based on Estimote Pairings and Script 2.0
 # Experiment Date: 2018-02-13
 
+class TaskToDag(object):
+
+    mapping = {
+        Task.WATER_PLANTS: WaterPlantsDag,
+        Task.TAKE_MEDS: TakeMedicationDag,
+        Task.WALK_DOG: WalkDogDag
+    }
 
 class Items(object):
 

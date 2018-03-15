@@ -67,7 +67,7 @@ class WaterPlantsDag(object):
         'current': 'fill_water',
         'next': 'water_plant2'
     }
-    taskStart = {
+    task_start = {
         'W': fill_water,
         'current': 'retrieve_water',
         'next': 'fill_water'
@@ -123,7 +123,7 @@ class WalkDogDag(object):
         'current': 'retrieve_leash',
         'next': 'retrieve_keys'
     }
-    taskStart = {
+    task_start = {
         'U': retrieve_leash,
         'current': 'retrieve_umbrella',
         'next': 'retrieve_leash'
@@ -245,7 +245,7 @@ class TakeMedicationDag(object):
         'current': 'retrieve_cup',
         'next': 'fill_cup'
     }
-    taskStart = {
+    task_start = {
         'F': retrieve_cup,
         'current': 'retrieve_food',
         'next': 'retrieve_cup'
