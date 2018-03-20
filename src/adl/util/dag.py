@@ -13,25 +13,6 @@ DR  door
 '''
 
 class WaterPlantsDag(object):
-    subtask = {
-        'retrive_water': 0,
-        'fill_water': 1,
-        'water_plant2': 2,
-        'water_plant3': 3,
-        'rinse_can': 4,
-        'return_can': 5,
-        'Done': 6 
-    }
-    subtask_info = {
-        0: ('Retrieve water can', 'watercan'),
-        1: ('Fill water can', 'watercan'),
-        2: ('Water coffee table plant', 'plantcoffee'),
-        3: ('Water side table plant', 'plantside'),
-        4: ('Rinse water can', 'watercan'),
-        5: ('Return water can', 'watercan'),
-        6: ('Completed', None)
-    }
-    num_tasks = 6
 
     return_can = {
         'S': None,
@@ -47,50 +28,56 @@ class WaterPlantsDag(object):
         'current': 'rinse_can',
         'next': 'return_can'
     }
-    water_plant3 = {
+    side_plant = {
         'P2': None,
         'W': None,
         'P3': rinse_can,
-        'current': 'water_plant3',
+        'current': 'side_plant',
         'next': 'rinse_can'
     }
-    water_plant2 = {
+    coffee_plant = {
         'S': None,
         'W': None,
-        'P2': water_plant3,
-        'current': 'water_plant2',
-        'next': 'water_plant3'
+        'P2': side_plant,
+        'current': 'coffee_plant',
+        'next': 'side_plant'
     }
-    fill_water = {
+    fill_can = {
         'W': None,
-        'S': water_plant2,
-        'current': 'fill_water',
-        'next': 'water_plant2'
+        'S': coffee_plant,
+        'current': 'fill_can',
+        'next': 'coffee_plant'
     }
-    task_start = {
-        'W': fill_water,
-        'current': 'retrieve_water',
-        'next': 'fill_water'
+    get_can = {
+        'W': fill_can,
+        'current': 'get_can',
+        'next': 'fill_can'
     }
+    task_start = get_can
 
-class WalkDogDag(object):
     subtask = {
-        'retrieve_umbrella': 0,
-        'retrieve_leash': 1,
-        'retrieve_keys': 2,
-        'leash_dog': 3,
-        'exit_house': 4,
-        'Done': 5
+        'get_can': 0,
+        'fill_can': 1,
+        'coffee_plant': 2,
+        'side_plant': 3,
+        'rinse_can': 4,
+        'return_can': 5,
+        'Done': 6
     }
     subtask_info = {
-        0: ('Retrieve Umbrella', 'umbrella'),
-        1: ('Retrieve Leash', 'leash'),
-        2: ('Retrieve Keys', 'keys'),
-        3: ('Leash Dog', 'dog'),
-        4: ('Exit', None),
-        5: ('Completed', None)
+        # (description, query object, current dag, next dag if error)
+        0: ('Retrieve water can', 'watercan', get_can, fill_can),
+        1: ('Fill water can', 'watercan', fill_can, coffee_plant),
+        2: ('Water coffee table plant', 'plantcoffee', coffee_plant, rinse_can),
+        3: ('Water side table plant', 'plantside', side_plant, rinse_can),
+        4: ('Rinse water can', 'watercan', rinse_can, return_can),
+        5: ('Return water can', 'watercan', return_can, None),
+        6: ('Completed', None, None, None)
     }
-    num_tasks = 5
+    num_tasks = 6
+
+
+class WalkDogDag(object):
 
     exit_house = {
         'U': None,
@@ -110,57 +97,46 @@ class WalkDogDag(object):
         'current': 'leash_dog',
         'next': 'exit_house'
     }
-    retrieve_keys = {
+    get_keys = {
         'U': None,
         'L': None,
         'K': leash_dog,
-        'current': 'retrieve_keys',
+        'current': 'get_keys',
         'next': 'leash_dog'
     }
-    retrieve_leash = {
+    get_leash = {
         'U': None,
-        'L': retrieve_keys,
-        'current': 'retrieve_leash',
-        'next': 'retrieve_keys'
+        'L': get_keys,
+        'current': 'get_leash',
+        'next': 'get_keys'
     }
-    task_start = {
-        'U': retrieve_leash,
-        'current': 'retrieve_umbrella',
-        'next': 'retrieve_leash'
+    get_umbrella = {
+        'U': get_leash,
+        'current': 'get_umbrella',
+        'next': 'get_leash'
     }
+    task_start = get_umbrella
 
-class TakeMedicationDag(object):
     subtask = {
-        'retrieve_food': 0,
-        'retrieve_cup': 1,
-        'fill_cup': 2,
-        'retrieve_med': 3,
-        'sit_chair': 4,
-        'eat_food': 5,
-        'take_med': 6,
-        'drink_water': 7,
-        'stand_up': 8,
-        'return_med': 9,
-        'rinse_cup': 10,
-        'throw_garbage': 11,
-        'Done': 12
+        'get_umbrella': 0,
+        'get_leash': 1,
+        'get_keys': 2,
+        'leash_dog': 3,
+        'exit_house': 4,
+        'Done': 5
     }
     subtask_info = {
-        0: ('Retrieve food', 'food'),
-        1: ('Retrieve cup', 'glass'),
-        2: ('Fill cup', 'glass'),
-        3: ('Retrieve medication', 'pillbottle'),
-        4: ('Sit chair', None),
-        5: ('Eat food', 'food'),
-        6: ('Take medication', 'pillbottle'),
-        7: ('Drink water', 'glass'),
-        8: ('Stand up', None),
-        9: ('Return medication', 'pillbottle'),
-        10: ('Rinse cup', 'glass'),
-        11: ('Throw garbage', 'food'),
-        12: ('Completed', None)
+        # (description, query object, current dag, next dag if error)
+        0: ('Retrieve Umbrella', 'umbrella', get_umbrella, get_keys),
+        1: ('Retrieve Leash', 'leash', get_leash, leash_dog),
+        2: ('Retrieve Keys', 'keys', get_keys, exit_house),
+        3: ('Leash Dog', 'dog', leash_dog, exit_house),
+        4: ('Exit', None, exit_house, None),
+        5: ('Completed', None, None, None)
     }
-    num_tasks = 12
+    num_tasks = 5
+
+class TakeMedicationDag(object):
 
     throw_garbage = {
         'S': None,
@@ -224,39 +200,73 @@ class TakeMedicationDag(object):
         'current': 'sit_chair',
         'next': 'eat_food'
     }
-    retrieve_med = {
+    get_med = {
         'F': None,
         'C': None,
         'S': None,
         'M': sit_chair,
-        'current': 'retrieve_med',
+        'current': 'get_med',
         'next': 'sit_chair'
     }
     fill_cup = {
         'F': None,
         'C': None,
-        'S': retrieve_med,
+        'S': get_med,
         'current': 'fill_cup',
-        'next': 'retrieve_med'
+        'next': 'get_med'
     }
-    retrieve_cup = {
+    get_cup = {
         'F': None,
         'C': fill_cup,
-        'current': 'retrieve_cup',
+        'current': 'get_cup',
         'next': 'fill_cup'
     }
-    task_start = {
-        'F': retrieve_cup,
-        'current': 'retrieve_food',
-        'next': 'retrieve_cup'
+    get_food = {
+        'F': get_cup,
+        'current': 'get_food',
+        'next': 'get_cup'
     }
+    task_start = get_food
+
+    subtask = {
+        'get_food': 0,
+        'get_cup': 1,
+        'fill_cup': 2,
+        'get_med': 3,
+        'sit_chair': 4,
+        'eat_food': 5,
+        'take_med': 6,
+        'drink_water': 7,
+        'stand_up': 8,
+        'return_med': 9,
+        'rinse_cup': 10,
+        'throw_garbage': 11,
+        'Done': 12
+    }
+    subtask_info = {
+        # (description, query object, current dag, next dag if error)
+        0: ('Retrieve food', 'food', get_food, fill_cup),
+        1: ('Retrieve cup', 'glass', get_cup, fill_cup),
+        2: ('Fill cup', 'glass', fill_cup, sit_chair),
+        3: ('Retrieve medication', 'pillbottle', get_med),
+        4: ('Sit chair', None, sit_chair, take_med),
+        5: ('Eat food', 'food', eat_food, drink_water),
+        6: ('Take medication', 'pillbottle', take_med, drink_water),
+        7: ('Drink water', 'glass', drink_water, return_med),
+        8: ('Stand up', None, stand_up, stand_up),
+        9: ('Return medication', 'pillbottle', return_med, throw_garbage),
+        10: ('Rinse cup', 'glass', rinse_cup, None),
+        11: ('Throw garbage', 'food', throw_garbage, None),
+        12: ('Completed', None, None, None)
+    }
+    num_tasks = 12
 
 
 if __name__ == '__main__':
     w = WaterPlantsDag()
-    print(w.fill_water['current'])
-    print(w.fill_water['S']['P2']['P3']['S']['Done'])
+    print(w.fill_can['current'])
+    print(w.fill_can['S']['P2']['P3']['S']['Done'])
 
     wd = WalkDogDag()
-    print(wd.retrieve_leash['L']['next'])
-    print(wd.retrieve_leash['L']['K']['D']['Done'])
+    print(wd.get_leash['L']['next'])
+    print(wd.get_leash['L']['K']['D']['Done'])

@@ -48,8 +48,9 @@ class TestErrorDetector:
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
         self.rcon.set_on_connect_callback(self.casas_on_connect)
 
-    def casas_on_connect(self):
         self.ros_setup()
+
+    def casas_on_connect(self):
         self.rcon.call_later(1, self.casas_publish_event)
 
     def ros_setup(self):
@@ -95,12 +96,11 @@ class TestErrorDetector:
                 if self.start_datetime is None:
                     self.start_datetime = dt
                 time_diff = (dt - self.start_datetime).total_seconds()
-                status = True if row[3] == 'start' else False
                 if len(row) > 4:
                     self.test_events[int(time_diff)].append(
-                        (row[2], status, row[4], True if row[5] == 'start' else False))
+                        (row[2], row[3], row[4], row[5]))
                 else:
-                    self.test_events[int(time_diff)].append((row[2], status))
+                    self.test_events[int(time_diff)].append((row[2], row[3]))
         rospy.loginfo("{} loaded successfully with total_events={}".format(file_name, len(self.test_events)))
         self.test_events_len = len(self.test_events)
         
@@ -158,7 +158,7 @@ class TestErrorDetector:
                     category='entity',
                     package_type='Estimote-Sticker',
                     sensor_type='Estimote-Movement',
-                    message='MOVED' if event[1] else 'STILL',
+                    message=event[1],
                     target=event[0],
                     serial='5c02cb086ce7',
                     by='EstimoteAgent',
