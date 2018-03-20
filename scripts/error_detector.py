@@ -50,13 +50,19 @@ class ErrorDetector:
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
         self.casas_setup_exchange()
 
-    def task_setup(self, task_num=None, status=TaskStatus.PENDING, text="PENDING"):
+    def task_setup(self, task_num=-1, status=TaskStatus.PENDING, text="PENDING"):
         self.task_number = task_num
         self.task_status.status = status
         self.task_status.text = text
         self.task_sequence = []
         self.task_sequence_full = []
-        self.task_no_error = True 
+        self.task_no_error = True
+        self.task_dag = None
+        self.error_index = -1
+        self.error_code = None
+        if self.task_number >= 0:
+            self.task_dag = TaskToDag.mapping[self.task_number].task_start
+        self.fix_error = False
 
     def ros_setup(self):
         # start task rosservice server
@@ -74,18 +80,21 @@ class ErrorDetector:
 
     def start_error_correction(self, error_status):
         error_key = error_status[4]
-        error_step = TaskToDag.mapping[self.task_number].subtask[error_key]
-        rospy.loginfo("Initiating error correction for {} at step {}".format(error_key, error_step))
+        self.error_step = TaskToDag.mapping[self.task_number].subtask[error_key]
+        self.error_code = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][2]
+        self.error_index = len(self.task_sequence)
+        rospy.loginfo("Initiating error correction for {} at step {}".format(error_key, self.error_step))
         if self.do_error_connected:
             goal = DoErrorGoal()
             goal.task_number = self.task_number
-            goal.error_step = error_step
-            # TODO: Uncomment
-            #self.do_error.send_goal(
-            #    goal,
-            #    done_cb=self.__error_correction_done_cb,
-            #    active_cb=self.__error_correction_active_cb,
-            #    feedback_cb=self.__error_correction_feedback_cb)
+            goal.error_step = self.error_step
+            self.do_error.send_goal(
+                goal,
+                done_cb=self.__error_correction_done_cb,
+                active_cb=self.__error_correction_active_cb,
+                feedback_cb=self.__error_correction_feedback_cb)
+        else:
+            self.fix_error = self.test
 
     def __error_correction_feedback_cb(self, feedback):
         rospy.loginfo("Error correction status={}".format(feedback.text))
@@ -100,13 +109,20 @@ class ErrorDetector:
            and result.status == 3 and result.is_complete:
             self.task_status.text = "ERROR CORRECTION SUCCEEDED"
             rospy.loginfo("Error correction succeeded")
-            # TODO: Once error corrected, need to have check_sequence
-            # check the correct dag for the next subtask
             self.task_no_error = True
+            self.__correct_sequence()
         else:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("Error correction failed")
 
+    def __correct_sequence(self):
+        # Fix error by adding missing step in sequence
+        self.task_sequence.insert(self.error_index, self.error_code)
+        next_step = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
+        # Redo next step when next step is dependent to error step
+        if (next_step - self.error_step) == 1:
+            self.task_sequence = self.task_sequence[:self.error_index + 1]
+        
     def stop_error_correction(self):
         if self.do_error_connected:
             self.do_error.cancel_goal()
@@ -117,7 +133,7 @@ class ErrorDetector:
             status=TaskStatus.SUCCESS,
             text='SUCCESS')
         if request.id.task_number < Task.size:
-            if self.task_number is None \
+            if self.task_number < 0 \
                and request.request.status == TaskStatus.START \
                and self.task_status.status == TaskStatus.PENDING:
                 self.task_setup(
@@ -133,7 +149,7 @@ class ErrorDetector:
                 rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
                 return TaskControllerResponse(response)
 
-        rospy.logwarn("Invalid task request")
+        rospy.logwarn("Invalid tsask request")
         response.status = TaskStatus.FAILED
         response.text = "FAILED"        
         return TaskControllerResponse(response)
@@ -168,10 +184,10 @@ class ErrorDetector:
                     str(sensor.stamp), str(sensor.target), str(sensor.message)))
 
     def __check_error(self, new_sequence):
-        task_key = TaskToDag.mapping[self.task_number].task_start['current']
+        task_key = self.task_dag['current']
         task_step = TaskToDag.mapping[self.task_number].subtask[task_key]
         result = check_sequence(
-            TaskToDag.mapping[self.task_number].task_start,
+            self.task_dag,
             seq=self.task_sequence+new_sequence,
             task_count=task_step,
             task_num=TaskToDag.mapping[self.task_number].num_tasks)
@@ -179,6 +195,11 @@ class ErrorDetector:
         return result
 
     def __casas_cb(self, sensors):
+        if self.test and self.fix_error:
+            self.task_status.status = TaskStatus.ACTIVE
+            self.__correct_sequence()
+            self.fix_error = False
+
         if self.task_status.status == TaskStatus.ACTIVE:
             new_seq = []
             for sensor in sensors:
@@ -191,10 +212,12 @@ class ErrorDetector:
                     self.task_sequence_full.append("*")
                     self.start_error_correction(check_result)
                     self.task_no_error = False
-
+                    
+                # Concatenate new sensor readings into task sequence
                 self.task_sequence_full.extend(new_seq)
                 self.task_sequence.extend(new_seq)
-                rospy.loginfo("seq:{}".format("-".join(self.task_sequence_full)))
+                rospy.loginfo("seq :{}".format("-".join(self.task_sequence)))
+                rospy.loginfo("seq*:{}".format("-".join(self.task_sequence_full)))
         else:
             for sensor in sensors:
                 rospy.loginfo("{}\t{}\t{}".format(
