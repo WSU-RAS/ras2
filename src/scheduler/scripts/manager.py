@@ -22,21 +22,23 @@ class SchedulerServer:
             'do_error', DoErrorAction,
             execute_cb=self.do_error_execute,
             auto_start=False)
-        self.do_error.start()
 
         # Called from the tablet when we want to go to a particular object
         # This then forwards it to our Go To node via the self.goto_client
-        self.tabletGoto = SimpleActionServer(
+        self.tablet_goto = SimpleActionServer(
             'tablet_response', TabletGotoAction,
-            execute_cb=self.tabletGoto_execute,
+            execute_cb=self.tablet_goto_execute,
             auto_start=False)
-        self.tabletGoto.start()
+        self.tablet_goto.start()
 
         # Forward commands through our Go To node
         self.goto_client = SimpleActionClient(
             'goto', GotoAction)
         self.do_error.start()
         self.goto_client.wait_for_server()
+
+        self.tablet_goto.start()
+        self.do_error_start()
 
         # Tablet data
         self.task_number = 0
@@ -51,7 +53,7 @@ class SchedulerServer:
         if self.is_goto_active:
             self.goto_client.cancel_goal()
 
-    def errorData(self, task_number, error_step):
+    def error_data(self, task_number, error_step):
         """
         From the task number and error step, get the corresponding object name
         and video urls
@@ -104,7 +106,7 @@ class SchedulerServer:
 
         return object_to_find, video_step_url, video_full_url
 
-    def tabletCommand(self, screen, objectName, face_url, video_step_url,
+    def tablet_command(self, screen, object_name, face_url, video_step_url,
             video_full_url, audio_url):
         """
         Command the tablet to switch to a particular screen
@@ -112,12 +114,12 @@ class SchedulerServer:
         rospy.wait_for_service("tablet")
 
         rospy.loginfo("Commanding tablet: s: %s o: %s f: %s vs: %s vf: %s a: %s",
-                screen, objectName, face_url, video_step_url,
+                screen, object_name, face_url, video_step_url,
                 video_full_url, audio_url)
 
         try:
             query = rospy.ServiceProxy("tablet", Tablet)
-            results = query(screen, objectName, face_url, video_step_url,
+            results = query(screen, object_name, face_url, video_step_url,
             video_full_url, audio_url)
             return results.success
         except rospy.ServiceException, e:
@@ -125,7 +127,7 @@ class SchedulerServer:
 
         return False
 
-    def tabletGoto_execute(self, goal):
+    def tablet_goto_execute(self, goal):
         """
         Handle the response from what the user clicked on the tablet
         """
@@ -143,7 +145,7 @@ class SchedulerServer:
             pass
         elif response == "videodone":
             # Return to the options screen
-            self.tabletCommand("options", self.object, self.face_url,
+            self.tablet_command("options", self.object, self.face_url,
                     self.video_step_url, self.video_full_url, self.audio_url)
         elif response == "audiodone":
             pass
@@ -154,7 +156,7 @@ class SchedulerServer:
         elif response == "goto":
             # Show options but without the go to object button
             self.object = ""
-            self.tabletCommand("options", self.object, self.face_url,
+            self.tablet_command("options", self.object, self.face_url,
                     self.video_step_url, self.video_full_url, self.audio_url)
 
             # Find the object
@@ -162,21 +164,21 @@ class SchedulerServer:
                 while not self.is_goto_active:
                     self.rate.sleep()
 
-                tabletGoto_feedback = TabletGotoFeedback()
-                tabletGoto_feedback.status = 1
-                tabletGoto_feedback.text = "SENT GOTO GOAL TO TURTLEBOT"
-                self.tabletGoto.publish_feedback(tabletGoto_feedback)
+                tablet_goto_feedback = TabletGotoFeedback()
+                tablet_goto_feedback.status = 1
+                tablet_goto_feedback.text = "SENT GOTO GOAL TO TURTLEBOT"
+                self.tablet_goto.publish_feedback(tablet_goto_feedback)
                 self.rate.sleep()
 
                 while self.is_goto_active:
-                    tabletGoto_feedback.status = 2
-                    tabletGoto_feedback.text = "TURTLEBOT NAVIGATING"
-                    self.tabletGoto.publish_feedback(tabletGoto_feedback)
+                    tablet_goto_feedback.status = 2
+                    tablet_goto_feedback.text = "TURTLEBOT NAVIGATING"
+                    self.tablet_goto.publish_feedback(tablet_goto_feedback)
                     self.rate.sleep()
 
-                tabletGoto_feedback.status = 3
-                tabletGoto_feedback.text = "TURTLEBOT COMPLETED TASK"
-                self.tabletGoto.publish_feedback(tabletGoto_feedback)
+                tablet_goto_feedback.status = 3
+                tablet_goto_feedback.text = "TURTLEBOT COMPLETED TASK"
+                self.tablet_goto.publish_feedback(tablet_goto_feedback)
 
                 if self.success:
                     rospy.loginfo("Found object")
@@ -188,9 +190,9 @@ class SchedulerServer:
         else:
             pass
 
-        tabletGoto_result = TabletGotoResult()
-        tabletGoto_result.success = success
-        self.tabletGoto.set_succeeded(tabletGoto_result)
+        tablet_goto_result = TabletGotoResult()
+        tablet_goto_result.success = success
+        self.tablet_goto.set_succeeded(tablet_goto_result)
 
     def do_error_execute(self, goal):
         """
@@ -203,12 +205,12 @@ class SchedulerServer:
         self.audio_url = "" # TODO nobody recorded the audio files yet?
         self.face_url = "happy-cartoon-face-hi.png"
         self.object, self.video_step_url, self.video_full_url = \
-                self.errorData(goal.task_number, goal.error_step)
+                self.error_data(goal.task_number, goal.error_step)
         self.task_number = goal.task_number
         self.error_step = goal.error_step
 
         # Command tablet
-        self.tabletCommand("choice", self.object, self.face_url,
+        self.tablet_command("choice", self.object, self.face_url,
                 self.video_step_url, self.video_full_url, self.audio_url)
 
         # Find the human (type 1)
@@ -248,25 +250,25 @@ class SchedulerServer:
             do_error_result.is_complete = True
             self.do_error.set_succeeded(do_error_result)
 
-    def goto(self, objectName, task_number, error_step):
+    def goto(self, object_name, task_number, error_step):
         """
         From the specified server, try going to the specified object
         """
-        if objectName == "base1":
-            gotoType = 0
-        elif objectName == "base2":
-            gotoType = 0
-        elif objectName == "human":
-            gotoType = 1
+        if object_name == "base1":
+            goto_type = 0
+        elif object_name == "base2":
+            goto_type = 0
+        elif object_name == "human":
+            goto_type = 1
         else:
-            gotoType = 2
+            goto_type = 2
 
         if self.is_goto_active:
             rospy.logerr("Cannot navigate to two places at once!")
             return False
 
         goto_goal = GotoGoal()
-        goto_goal.type = gotoType
+        goto_goal.type = goto_type
         goto_goal.task_number = task_number
         goto_goal.error_step = error_step
         goto_goal.error_object = error_step
