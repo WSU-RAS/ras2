@@ -28,25 +28,25 @@ class WaterPlantsDag(object):
         'current': 'rinse_can',
         'next': 'return_can'
     }
-    side_plant = {
+    water_plant3 = {
         'P2': None,
         'W': None,
         'P3': rinse_can,
-        'current': 'side_plant',
+        'current': 'water_plant3',
         'next': 'rinse_can'
     }
-    coffee_plant = {
+    water_plant2 = {
         'S': None,
         'W': None,
-        'P2': side_plant,
-        'current': 'coffee_plant',
-        'next': 'side_plant'
+        'P2': water_plant3,
+        'current': 'water_plant2',
+        'next': 'water_plant3'
     }
     fill_can = {
         'W': None,
-        'S': coffee_plant,
+        'S': water_plant2,
         'current': 'fill_can',
-        'next': 'coffee_plant'
+        'next': 'water_plant2'
     }
     get_can = {
         'W': fill_can,
@@ -58,8 +58,8 @@ class WaterPlantsDag(object):
     subtask = {
         'get_can': 0,
         'fill_can': 1,
-        'coffee_plant': 2,
-        'side_plant': 3,
+        'water_plant2': 2,
+        'water_plant3': 3,
         'rinse_can': 4,
         'return_can': 5,
         'Done': 6
@@ -67,9 +67,9 @@ class WaterPlantsDag(object):
     subtask_info = {
         # (description, query object, current dag, next dag if error)
         0: ('Retrieve water can', 'watercan', get_can, fill_can),
-        1: ('Fill water can', 'watercan', fill_can, coffee_plant),
-        2: ('Water coffee table plant', 'plantcoffee', coffee_plant, rinse_can),
-        3: ('Water side table plant', 'plantside', side_plant, rinse_can),
+        1: ('Fill water can', 'watercan', fill_can, water_plant2),
+        2: ('Water coffee table plant', 'plantcoffee', water_plant2, rinse_can),
+        3: ('Water side table plant', 'plantside', water_plant3, rinse_can),
         4: ('Rinse water can', 'watercan', rinse_can, return_can),
         5: ('Return water can', 'watercan', return_can, None),
         6: ('Completed', None, None, None)

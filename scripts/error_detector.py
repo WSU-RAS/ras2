@@ -27,16 +27,11 @@ class ErrorDetector:
 
         rospack = rospkg.RosPack()
         pkg_path = rospack.get_path('adl_error_detection')
-        self.ros_setup()
-
         self.test = test
-        self.task_number = None
-        self.task_status = TaskStatus(
-            status=TaskStatus.PENDING,
-            text='PENDING')
-        self.task_sequence = []
-        self.task_sequence_full = []
-        self.task_no_error = True
+        self.task_status = TaskStatus()
+
+        self.task_setup()
+        self.ros_setup()
 
         config = configparser.ConfigParser()
         config.read(pkg_path + "/scripts/casas.cfg")
@@ -54,6 +49,14 @@ class ErrorDetector:
             translations=self.translate)
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
         self.casas_setup_exchange()
+
+    def task_setup(self, task_num=None, status=TaskStatus.PENDING, text="PENDING"):
+        self.task_number = task_num
+        self.task_status.status = status
+        self.task_status.text = text
+        self.task_sequence = []
+        self.task_sequence_full = []
+        self.task_no_error = True 
 
     def ros_setup(self):
         # start task rosservice server
@@ -80,18 +83,18 @@ class ErrorDetector:
             # TODO: Uncomment
             #self.do_error.send_goal(
             #    goal,
-            #    done_cb=self.error_correction_done_cb,
-            #    active_cb=self.error_correction_active_cb,
-            #    feedback_cb=self.error_correction_feedback_cb)
+            #    done_cb=self.__error_correction_done_cb,
+            #    active_cb=self.__error_correction_active_cb,
+            #    feedback_cb=self.__error_correction_feedback_cb)
 
-    def error_correction_feedback_cb(self, feedback):
+    def __error_correction_feedback_cb(self, feedback):
         rospy.loginfo("Error correction status={}".format(feedback.text))
 
-    def error_correction_active_cb(self):
+    def __error_correction_active_cb(self):
         self.task_status.status = TaskStatus.PENDING
         self.task_status.text = "ERROR CORRECTION"
 
-    def error_correction_done_cb(self, terminal_state, result):
+    def __error_correction_done_cb(self, terminal_state, result):
         self.task_status.status = TaskStatus.ACTIVE
         if terminal_state == GoalStatus.SUCCEEDED \
            and result.status == 3 and result.is_complete:
@@ -99,6 +102,7 @@ class ErrorDetector:
             rospy.loginfo("Error correction succeeded")
             # TODO: Once error corrected, need to have check_sequence
             # check the correct dag for the next subtask
+            self.task_no_error = True
         else:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("Error correction failed")
@@ -116,19 +120,16 @@ class ErrorDetector:
             if self.task_number is None \
                and request.request.status == TaskStatus.START \
                and self.task_status.status == TaskStatus.PENDING:
-                self.task_sequence = []
-                self.task_sequence_full = []
-                self.task_number = request.id.task_number
-                self.task_status.status = TaskStatus.ACTIVE
-                self.task_status.text = "ACTIVE"
+                self.task_setup(
+                    task_num=request.id.task_number,
+                    status=TaskStatus.ACTIVE,
+                    text="ACTIVE")
                 rospy.loginfo("{}: START".format(Task.types[self.task_number]))
                 return TaskControllerResponse(response)
             elif self.task_number == request.id.task_number \
                and request.request.status == TaskStatus.END \
                and self.task_status.status == TaskStatus.ACTIVE:
-                self.task_number = None
-                self.task_status.status = TaskStatus.PENDING
-                self.task_status.text = "PENDING"
+                self.task_setup()
                 rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
                 return TaskControllerResponse(response)
 
@@ -144,7 +145,7 @@ class ErrorDetector:
             routing_key='#',
             exchange_durable=True,
             casas_events=True,
-            callback_function=self.casas_callback)
+            callback_function=self.__casas_cb)
         if self.test:
             self.rcon.setup_subscribe_to_exchange(
                 exchange_name='test.events.testbed.casas',
@@ -152,13 +153,13 @@ class ErrorDetector:
                 routing_key='#',
                 exchange_durable=True,
                 casas_events=True,
-                callback_function=self.casas_callback)
+                callback_function=self.__casas_cb)
 
     def __add_sensor_to_sequence(self, sensor, sequence):
         is_estimote = sensor.sensor_type == 'Estimote-Movement' \
             and sensor.message == 'MOVED'
         if is_estimote or sensor.target in ['D001', 'D011']:
-            decode_key = Items.decode[sensor.target][:-2]
+            decode_key = Items.decode[sensor.target]
             # Only include item used in the task
             if self.task_number in Items.encode[decode_key][2]:
                 code = Items.encode[decode_key][1]
@@ -177,7 +178,7 @@ class ErrorDetector:
         rospy.loginfo("status:{}".format(result))
         return result
 
-    def casas_callback(self, sensors):
+    def __casas_cb(self, sensors):
         if self.task_status.status == TaskStatus.ACTIVE:
             new_seq = []
             for sensor in sensors:
@@ -185,7 +186,6 @@ class ErrorDetector:
 
             if len(new_seq) > 0:
                 check_result = self.__check_error(new_seq)
-
                 is_error_detected = not check_result[1] and not check_result[3]
                 if is_error_detected and self.task_no_error:
                     self.task_sequence_full.append("*")
@@ -205,9 +205,6 @@ class ErrorDetector:
             self.rcon.run()
         except KeyboardInterrupt:
             self.stop()
-
-    def detect_error(self):
-        pass
 
     def stop(self):
         rospy.loginfo("Disconnecting casas connection")
