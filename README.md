@@ -30,7 +30,7 @@ Adding a new submodule:
 
 Updating all submodules to the latest commit on origin:
 
-    git submodule foreach -q --recursive "branch='$(git config -f $toplevel/.gitmodules submodule.$name.branch)'; git checkout $branch; git pull" && git pull && git submodule update --remote --recursive
+    git submodule foreach -q --recursive "branch='$(git config -f $toplevel/.gitmodules submodule.$name.branch)'; git fetch origin --tags; git checkout $branch; git pull" && git pull && git submodule update --remote --recursive
 
 Initializing newly added submodules (e.g. somebody else adds one):
 
