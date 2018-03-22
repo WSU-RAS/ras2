@@ -6,7 +6,7 @@ from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
 from ras_msgs.msg import GotoAction, GotoGoal
 from ras_msgs.msg import DoErrorAction, DoErrorFeedback, DoErrorResult
-from ras_msgs.msg import TabletGotoAction, TabletGotoFeedback, TabletGotoResult
+from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
 from tablet_interface.srv import Tablet
 
 from adl.util import Task, Goal
@@ -33,21 +33,28 @@ class SchedulerServer:
             execute_cb=self.do_error_execute,
             auto_start=False)
 
+        self.use_robot = True
+        self.use_tablet = True
+        if rospy.has_param("ras"):
+            manager = rospy.get_param("ras")
+            self.use_robot = manager['use_robot']
+            self.use_tablet = manager['use_tablet']
+
         # Called from the tablet when we want to go to a particular object
         # This then forwards it to our Go To node via the self.goto_client
-        self.tablet = SimpleActionServer(
-            'tablet_response', TabletGotoAction,
-            execute_cb=self.tablet_execute,
-            auto_start=False)
-        self.tablet.start()
+        if self.use_tablet:
+            self.tablet = SimpleActionServer(
+                'tablet_response', TabletAction,
+                execute_cb=self.tablet_execute,
+                auto_start=False)
+            self.tablet.start()
 
-        # Forward commands through our Go To node
-        self.goto_client = SimpleActionClient(
-            'goto', GotoAction)
-        self.do_error.start()
-        self.goto_client.wait_for_server()
+        if self.use_robot:
+            # Forward commands through our Go To node
+            self.goto_client = SimpleActionClient(
+                'goto', GotoAction)
+            self.goto_client.wait_for_server()
 
-        self.tablet.start()
         self.do_error.start()
 
         # Tablet data
@@ -80,21 +87,21 @@ class SchedulerServer:
         self.object_name, self.video_step_url, self.video_full_url = \
             TabletData.get_data(self.task_number, self.error_step)
 
-        while not self.is_task_error_completed:
-            break
-
         # Step ONE:
         # Setup tablet and find the human
-        self.tablet_setup("choice")
+        if self.use_tablet:
+            self.tablet_setup("choice")
         self.do_error_feedback(Status.INPROGRESS, "TABLET SETUP COMPLETED")
-        self.goto(Goal.HUMAN)
+
+        if self.use_robot:
+            self.goto(Goal.HUMAN)
         self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT GOAL TO GOTO HUMAN")
 
         # Do not proceed until goto has started
-        while not self.is_goto_active:
+        while not self.is_goto_active and self.use_robot:
             self.rate.sleep()
 
-        while self.is_goto_active:
+        while self.is_goto_active and self.use_robot:
             self.do_error_feedback(
                 Status.INPROGRESS, "TURTLEBOT NAVIGATING TOWARDS HUMAN")
             self.rate.sleep()
@@ -105,15 +112,15 @@ class SchedulerServer:
                 Status.INPROGRESS, "TURTLEBOT WITH HUMAN")
             rospy.loginfo("Found human")
         else:
-            self.is_task_error_completed = True
-            self.is_error_correction_success = False
+            self.is_task_error_completed = True and self.use_robot
+            self.is_error_correction_success = False or not self.use_robot
             self.do_error_feedback(
                 Status.FAILED, "TURTLEBOT GOAL TO GOTO HUMAN FAILED")
             rospy.logerr("Did not find human")
 
         # Step TWO:
         # Human interacts with tablet human chooses no or task completed
-        while not self.is_task_error_completed:
+        while not self.is_task_error_completed and self.use_tablet:
             self.rate.sleep()
 
         # It ONLY reaches here if Human chooses
@@ -123,7 +130,7 @@ class SchedulerServer:
             self.do_error_feedback(Status.COMPLETED, "ERROR CORRECTION COMPLETED")
         else:
             complete_status = Status.FAILED
-            self.do_error_feedback(Status.FAILED, "ERROR CORRECTIONF FAILED")
+            self.do_error_feedback(Status.FAILED, "ERROR CORRECTION FAILED")
 
         do_error_result = DoErrorResult()
         do_error_result.status = complete_status
@@ -178,18 +185,23 @@ class SchedulerServer:
 
         if response == "no" or response == "complete":
             self.is_task_error_completed = True
-            success = self.tablet_goto_execute(Goal.BASE)
+            self.is_error_correction_success = True
+            rospy.loginfo("Sending turtlebot to base")
+            if self.use_robot:
+                success = self.tablet_goto_execute(Goal.BASE)
         elif response == "videodone":
             # Return to the options screen
             self.tablet_setup("options")
         elif response == "goto":
             # Show options but without the go to object button
             self.tablet_setup("options", showObject=False)
-            success = self.tablet_goto_execute(Goal.OBJECT)
+            rospy.loginfo("Sending turtlebot to find object")
+            if self.use_robot:
+                success = self.tablet_goto_execute(Goal.OBJECT)
 
-        tablet_goto_result = TabletGotoResult()
-        tablet_goto_result.success = success
-        self.tablet.set_succeeded(tablet_goto_result)
+        tablet_result = TabletResult()
+        tablet_result.success = success
+        self.tablet.set_succeeded(tablet_result)
 
     def tablet_goto_execute(self, goal_type):
         """
@@ -202,13 +214,11 @@ class SchedulerServer:
             if goal_type == Goal.OBJECT:
                 msg = "Found object"
                 err_msg = "Did not find object"
-                rospy.loginfo("Sending turtlebot to find object")
                 self.tablet_feedback(Status.STARTED, "TURTLEBOT GOAL GO TO OBJECT")
                 self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT GOAL GO TO OBJECT")
             elif goal_type == Goal.BASE:
                 msg = "Back at base"
                 err_msg = "Did not get back at base"
-                rospy.loginfo("Sending turtlebot to base")
                 self.tablet_feedback(Status.STARTED, "TURTLEBOT GOAL GO TO BASE")
                 self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT GOAL GO TO BASE")
 
@@ -235,7 +245,7 @@ class SchedulerServer:
         """
         Sends feedback to the tablet action server
         """
-        tablet_feedback = TabletGotoFeedback()
+        tablet_feedback = TabletFeedback()
         tablet_feedback.status = status
         tablet_feedback.text = text
         self.tablet.publish_feedback(tablet_feedback)

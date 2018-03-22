@@ -1,5 +1,17 @@
 # Robot Activity Support (RAS)
 
+## Run RAS Experiment
+
+Run the full RAS experiment with robot and tablet.
+```
+roslaunch scheduler ras_experiment.launch
+```
+
+Run RAS experiment partially. You append arguments at the end of the roslaunch command to set options. To run without robot, append `use_robot:=false`. To run without tablet, append `use_tablet:=false`. You can also use both arguments. By default, they are both set to `true`.
+```
+roslaunch scheduler ras_experiment.launch use_robot:=false use_tablet:=true
+```
+
 ## Scheduler
 
 Run the `goto` action server node.
@@ -30,7 +42,7 @@ Adding a new submodule:
 
 Updating all submodules to the latest commit on origin:
 
-    git submodule foreach 'git fetch origin --tags; git checkout master; git pull' && git pull && git submodule update --remote --recursive
+    git submodule foreach -q --recursive "branch='$(git config -f $toplevel/.gitmodules submodule.$name.branch)'; git fetch origin --tags; git checkout $branch; git pull" && git pull && git submodule update --remote --recursive
 
 Initializing newly added submodules (e.g. somebody else adds one):
 
