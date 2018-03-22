@@ -20,7 +20,7 @@ class FindPersonState(smach.State):
             self,
             outcomes=['success', 'fail', 'preempted'],
             input_keys=['task_number_in', 'error_step_in'],
-            output_keys=['position_x_out', 'position_y_out']
+            output_keys=['position_x_out', 'position_y_out', 'orientation_z_in', 'orientation_w_in']
         )
         self.rate = rospy.Rate(10)
         self.find_person = actionlib.SimpleActionClient(
@@ -75,7 +75,7 @@ class GotoXYState(smach.State):
         smach.State.__init__(
             self,
             outcomes=['success', 'fail', 'preempted'],
-            input_keys=['position_x_in', 'position_y_in'])
+            input_keys=['position_x_in', 'position_y_in', 'orientation_z_in', 'orientation_w_in'])
 
         self.rate = rospy.Rate(10)
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
@@ -98,7 +98,8 @@ class GotoXYState(smach.State):
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = userdata.position_x_in
         goal.target_pose.pose.position.y = userdata.position_y_in
-        goal.target_pose.pose.orientation.w = 1.0 # Go forward
+        goal.target_pose.pose.orientation.z = userdata.orientation_z_in
+        goal.target_pose.pose.orientation.w = userdata.orientation_w_in
 
         self.success = False
         self.is_running = True
@@ -137,6 +138,8 @@ class FindPersonSMACH():
         sm.userdata.error_step = error_step
         sm.userdata.sm_pose_x = 0
         sm.userdata.sm_pose_y = 0
+        sm.userdata.sm_orient_z = 0
+        sm.userdata.sm_orient_w = 0
 
         # container having all the states
         with sm:
@@ -151,7 +154,9 @@ class FindPersonSMACH():
                     'task_number_in': 'task_number',
                     'error_step_in': 'error_step',
                     'position_x_out': 'sm_pose_x',
-                    'position_y_out': 'sm_pose_y'
+                    'position_y_out': 'sm_pose_y',
+                    'orientation_z_out' : 'sm_orient_z',
+                    'orientation_w_out' : 'sm_orient_z'
                 })
 
             smach.StateMachine.add(
@@ -163,7 +168,9 @@ class FindPersonSMACH():
                     'preempted': 'error'},
                 remapping={
                     'position_x_in': 'sm_pose_x',
-                    'position_y_in': 'sm_pose_y'
+                    'position_y_in': 'sm_pose_y',
+                    'orientation_z_in' : 'sm_orient_z',
+                    'orientation_w_in' : 'sm_orient_w'
                 })
 
         outcome =  sm.execute()
