@@ -148,8 +148,8 @@ class ErrorDetector:
                 self.task_setup()
                 rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
                 return TaskControllerResponse(response)
-
-        rospy.logwarn("Invalid tsask request")
+            
+        rospy.logwarn("Invalid task request")
         response.status = TaskStatus.FAILED
         response.text = "FAILED"        
         return TaskControllerResponse(response)
