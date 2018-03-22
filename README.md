@@ -1,5 +1,17 @@
 # Robot Activity Support (RAS)
 
+## Run RAS Experiment
+
+Run the full RAS experiment with robot and tablet.
+```
+roslaunch scheduler ras_experiment
+```
+
+Run RAS experiment partially. You append arguments at the end of the roslaunch command to set options. To run without robot, append `use_robot:=false`. To run without tablet, append `use_tablet:=false`. You can also use both arguments. By default, they are both set to `true`.
+```
+roslaunch scheduler ras_experiment use_robot:=false use_tablet:=true
+```
+
 ## Scheduler
 
 Run the `goto` action server node.
