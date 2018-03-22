@@ -298,6 +298,7 @@ class SchedulerServer:
 class TabletData(object):
     face_url = "happy-cartoon-face-hi.png"
     basename = 'http://casas.wsu.edu/smarthomestats/video/'
+    #basename = 'http://kyoto.kyoto.local/videos/'
 
     @staticmethod
     def get_data(task_number, error_step):
