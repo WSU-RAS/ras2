@@ -112,8 +112,8 @@ class SchedulerServer:
                 Status.INPROGRESS, "TURTLEBOT WITH HUMAN")
             rospy.loginfo("Found human")
         else:
-            self.is_task_error_completed = True
-            self.is_error_correction_success = False
+            self.is_task_error_completed = True and self.use_robot
+            self.is_error_correction_success = False or not self.use_robot
             self.do_error_feedback(
                 Status.FAILED, "TURTLEBOT GOAL TO GOTO HUMAN FAILED")
             rospy.logerr("Did not find human")
@@ -130,7 +130,7 @@ class SchedulerServer:
             self.do_error_feedback(Status.COMPLETED, "ERROR CORRECTION COMPLETED")
         else:
             complete_status = Status.FAILED
-            self.do_error_feedback(Status.FAILED, "ERROR CORRECTIONF FAILED")
+            self.do_error_feedback(Status.FAILED, "ERROR CORRECTION FAILED")
 
         do_error_result = DoErrorResult()
         do_error_result.status = complete_status
@@ -185,6 +185,7 @@ class SchedulerServer:
 
         if response == "no" or response == "complete":
             self.is_task_error_completed = True
+            self.is_error_correction_success = True
             rospy.loginfo("Sending turtlebot to base")
             if self.use_robot:
                 success = self.tablet_goto_execute(Goal.BASE)
