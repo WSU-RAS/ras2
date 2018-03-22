@@ -1,4 +1,5 @@
 # Activity Daily Living (ADL) Error Detection
+Program to detect error in ADL tasks.
 
 ## Requirements
 Install the following python modules:
