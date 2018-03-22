@@ -12,6 +12,8 @@ import smach
 from findperson_smach import FindPersonSMACH
 from goto_object_smach import GotoObjectSMACH
 
+from adl.util import Goal
+
 class GotoServer:
 
     def __init__(self):
@@ -23,54 +25,51 @@ class GotoServer:
         self.goto_server.start()
 
     def goto_execute(self, goal):
-        x = 20
-        y = -20
-        z = 0
-
         rospy.loginfo("Executing {} for {}".format(
             Goal.types[goal.type], Task.types[goal.task_number]))
-        rospy.loginfo("error_step={}  error_object={}".format(goal.error_step, goal.error_object))
-        # if the goal is to go to base
-        if goal.type == 0:
-            rospy.loginfo("Initiating movement to base")
+        rospy.loginfo("error_step={}  error_object={}".format(
+            goal.error_step, goal.error_object))
+
+        if goal.type == Goal.BASE:
+            self.goto_feedback(1, "GO TO BASE STATE MACHINE STARTED")
+            rospy.loginfo("Initiating GotoBase State Machine")
             sm_gotoobject = GotoObjectSMACH()
-            sm_gotoobject.execute(task_number = goal.task_number, error_step = goal.error_step, base = True )
-        # if the goal is to goto human
-        elif goal.type == 1:
+            outcome = sm_gotoobject.execute(
+                task_number=goal.task_number, 
+                error_step=goal.error_step, base=True)
+
+        elif goal.type == Goal.HUMAN:
+            self.goto_feedback(1, "FIND PERSON STATE MACHINE STARTED")
             rospy.loginfo("Initiating FindPerson State Machine")
             sm_findperson = FindPersonSMACH()
-            sm_findperson.execute(task_number = goal.task_number, error_step = goal.error_step)
-        elif goal.type == 2 :
+            outcome = sm_findperson.execute(
+                task_number=goal.task_number, error_step=goal.error_step)
+
+        elif goal.type == Goal.OBJECT:
+            self.goto_feedback(1, "GO TO OBJECT STATE MACHINE STARTED")
             rospy.loginfo("Initiating GotoObject State Machine")
             sm_gotoobject = GotoObjectSMACH()
-            sm_gotoobject.execute(task_number = goal.task_number, error_step = goal.error_step, base = False )
+            outcome = sm_gotoobject.execute(
+                task_number=goal.task_number, 
+                error_step=goal.error_step, base=False)
 
-	"""
-        goto_feedback = GotoFeedback()
-        while True:
-            goto_feedback.x = x
-            goto_feedback.y = y
-            goto_feedback.z = z
-            goto_feedback.status = 1
-            goto_feedback.text = 'ROBOT MOVING'
-            self.goto_server.publish_feedback(goto_feedback)
-            self.rate.sleep()
-            x -= 1
-            y += 1
-            if x == 0 and y == 0 and z == 0:
-                break
+        is_success = False if outcome == "error" else True
 
-        goto_feedback.x = x
-        goto_feedback.y = y
-        goto_feedback.z = z
-        goto_feedback.status = 2
-        goto_feedback.text = 'TASK COMPLETED'
-	"""
+        if is_success:
+            self.goto_feedback(3, "STATE MACHINE SUCCESSFUL")
+        else:
+            self.goto_feedback(4, "STATE MACHINE FAILED") 
 
         goto_result = GotoResult()
-        goto_result.status = 2
-        goto_result.is_complete = True
+        goto_result.status = 3 if is_success else 4
+        goto_result.is_complete = is_success
         self.goto_server.set_succeeded(goto_result)
+
+    def goto_feedback(self, status, text):
+        feedback = GotoFeedback()
+        feedback.status = status
+        feedback.text = text
+        self.goto_server.publish_feedback(feedback)
 
 
 if __name__ == '__main__':

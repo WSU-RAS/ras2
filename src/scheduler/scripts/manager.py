@@ -268,7 +268,7 @@ class SchedulerServer:
             self.goto_success = False
             status = "ABORTED"
         elif terminal_state == GoalStatus.SUCCEEDED:
-            self.goto_success = True
+            self.goto_success = True and result.is_complete
             status = "SUCCEEDED"
         elif terminal_state == GoalStatus.LOST:
             self.goto_success = False
@@ -283,8 +283,8 @@ class SchedulerServer:
         self.is_goto_active = True
 
     def goto_feedback_cb(self, feedback):
-        rospy.loginfo("goto feedback: x={}, y={}, z={}, status={}".format(
-            feedback.x, feedback.y, feedback.z, feedback.text))
+        rospy.loginfo("goto feedback: status={}".format(
+            feedback.text))
 
 
 class TabletData(object):
