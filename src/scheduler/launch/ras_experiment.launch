@@ -52,5 +52,7 @@
     <!-- Camera, object detection, etc. -->
     <group if="$(arg use_camera)">
         <node name="jetson" pkg="scheduler" type="jetson.sh" output="screen" />
+        <!-- for experimenter interface, to see video -->
+        <node name="web_video_server" pkg="web_video_server" type="web_video_server" />
     </group>
 </launch>

@@ -29,6 +29,17 @@ Publish a goal to the `do_error` actionlib server `/do_error/goal`. This is a mo
 rostopic pub /do_error/goal ras_msgs/DoErrorActionGoal '{header: auto, goal:{task_number: 1, error_step: 2}}'
 ```
 
+## Autostart on boot
+To enable on boot:
+
+    sudo cp src/scheduler/ras_experiment.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable ras_experiment.service
+
+To start or stop, use `systemctl`, e.g.:
+
+    sudo systemctl start ras_experiment.service
+
 ## Git Submodules
 Clone getting submodules:
 

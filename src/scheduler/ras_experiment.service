@@ -1,0 +1,14 @@
+[Unit]
+Description=RAS Experiment
+
+# We need the network to be up since the Jetson is over ethernet
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+ExecStart=/home/turtlebot/ras/src/scheduler/scripts/ras_run.sh
+User=turtlebot
+Group=turtlebot
+
+[Install]
+WantedBy=multi-user.target
