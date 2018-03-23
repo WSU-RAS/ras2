@@ -14,9 +14,14 @@ sudo apt install git-crypt
 ```
 
 ### Error Detector
-Run the error detection node.
+Launch error detector for actual experiment
 ```
-rosrun adl_error_detection error_detector.py
+roslaunch adl_error_detection detect_error.launch
+```
+
+Launch error detector for testing
+```
+roslaunch adl_error_detection detect_error.launch is_test:=true
 ```
 
 ### Start/End Task ROS Service Call

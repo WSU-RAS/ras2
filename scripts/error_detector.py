@@ -22,12 +22,21 @@ from ras_msgs.srv import TaskController, TaskControllerResponse
 
 class ErrorDetector:
 
-    def __init__(self, test=False):
+    def __init__(self):
         rospy.loginfo("Initializing Error Detector")
 
         rospack = rospkg.RosPack()
         pkg_path = rospack.get_path('adl_error_detection')
-        self.test = test
+
+        self.use_tablet = False
+        if rospy.has_param("ras"):
+            ras = rospy.get_param("ras")
+            self.use_tablet = ras['use_tablet']
+
+        self.test = False
+        if rospy.has_param("adl"):
+            adl = rospy.get_param("adl")
+            self.test = adl['is_test']
         self.task_status = TaskStatus()
 
         self.task_setup()
@@ -94,7 +103,7 @@ class ErrorDetector:
                 active_cb=self.__error_correction_active_cb,
                 feedback_cb=self.__error_correction_feedback_cb)
         else:
-            self.fix_error = self.test
+            self.fix_error = self.test and not self.use_tablet
 
     def __error_correction_feedback_cb(self, feedback):
         rospy.loginfo("Error correction status={}".format(feedback.text))
@@ -122,7 +131,7 @@ class ErrorDetector:
         # Redo next step when next step is dependent to error step
         if (next_step - self.error_step) == 1:
             self.task_sequence = self.task_sequence[:self.error_index + 1]
-        
+
     def stop_error_correction(self):
         if self.do_error_connected:
             self.do_error.cancel_goal()
@@ -148,10 +157,10 @@ class ErrorDetector:
                 self.task_setup()
                 rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
                 return TaskControllerResponse(response)
-            
+
         rospy.logwarn("Invalid task request")
         response.status = TaskStatus.FAILED
-        response.text = "FAILED"        
+        response.text = "FAILED"
         return TaskControllerResponse(response)
 
     def casas_setup_exchange(self):
@@ -212,7 +221,7 @@ class ErrorDetector:
                     self.task_sequence_full.append("*")
                     self.start_error_correction(check_result)
                     self.task_no_error = False
-                    
+
                 # Concatenate new sensor readings into task sequence
                 self.task_sequence_full.extend(new_seq)
                 self.task_sequence.extend(new_seq)
@@ -236,6 +245,6 @@ class ErrorDetector:
 
 if __name__ == "__main__":
     rospy.init_node("error_detector", disable_signals=True)
-    ed = ErrorDetector(test=True)
+    ed = ErrorDetector()
     ed.casas_run()
     rospy.on_shutdown(ed.stop)

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Can be set as argument during roslaunch -->
+    <arg name="is_test" default="false" />
+
+    <!-- Parameters -->
+    <param name="adl/is_test" value="$(arg is_test)" type="bool" />
+
+    <!-- Error Detection -->
+    <node name="error_detector" pkg="adl_error_detection" type="error_detector.py" output="screen" />
+</launch>
