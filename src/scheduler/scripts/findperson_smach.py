@@ -160,7 +160,7 @@ class FindPersonSMACH():
                     'position_x_out': 'sm_pose_x',
                     'position_y_out': 'sm_pose_y',
                     'orientation_z_out' : 'sm_orient_z',
-                    'orientation_w_out' : 'sm_orient_z'
+                    'orientation_w_out' : 'sm_orient_w'
                 })
 
             smach.StateMachine.add(
