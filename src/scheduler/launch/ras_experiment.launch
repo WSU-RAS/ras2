@@ -6,7 +6,8 @@
     <arg name="use_error" default="true" />
     <arg name="use_camera" default="true" />
 
-    <arg name="test_error" default="false" />
+    <arg name="is_test" default="false" /> <!-- testing error detection -->
+    <arg name="test_error" default="false" /> <!-- test only when using dummy data -->
     <arg name="new_map" default="false" />
     <arg name="gui" default="false" />
 
@@ -37,7 +38,7 @@
     <!-- Error detection -->
     <group if="$(arg use_error)">
         <include file="$(find adl_error_detection)/launch/detect_error.launch">
-            <arg name="is_test" value="$(arg test_error)" />
+            <arg name="is_test" value="$(arg is_test)" />
         </include>
 
         <group if="$(arg test_error)">
