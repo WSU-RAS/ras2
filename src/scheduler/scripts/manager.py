@@ -150,7 +150,9 @@ class SchedulerServer:
         """
         Command the tablet to switch to a particular screen
         """
+        rospy.loginfo("Waiting for /tablet service")
         rospy.wait_for_service("tablet")
+        rospy.loginfo("Found /tablet service")
 
         # We don't show the go to object button when we've already navigated to it
         if showObject:

@@ -50,7 +50,10 @@ class FindObjectState(smach.State):
         if data is not None and len(data) != 0:
             userdata.position_x_out = data[0].x
             userdata.position_y_out = data[0].y
-            rospy.loginfo("Object {} found at x = {} y = {}".format(object_to_find, data[0].x, data[0].y))
+            userdata.orientation_z_out = data[0].z
+            userdata.orientation_w_out = data[0].w
+            rospy.loginfo("Object {} found at x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y,
+                data[0].z, data[0].w))
             return "success"
         else:
             rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
@@ -90,7 +93,8 @@ class GotoXYState(smach.State):
     def execute(self, userdata):
         rospy.loginfo("Executing State GotoXY")
 
-        rospy.loginfo("Goto x = {} y = {}".format(userdata.position_x_in, userdata.position_y_in))
+        rospy.loginfo("Goto x = {} y = {} z = {} w = {}".format(userdata.position_x_in, userdata.position_y_in,
+            userdata.orientation_z_in, userdata.orientation_w_in))
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
@@ -166,8 +170,8 @@ class GotoObjectSMACH():
                 remapping = {
                     'position_x_in' : 'sm_pose_x',
                     'position_y_in' : 'sm_pose_y',
-                    'orientation_z_in : sm_orient_z',
-                    'orientation_w_in : sm_orient_w'})
+                    'orientation_z_in' : 'sm_orient_z',
+                    'orientation_w_in' : 'sm_orient_w'})
 
         outcome = sm.execute()
         return outcome

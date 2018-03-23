@@ -20,7 +20,7 @@ class FindPersonState(smach.State):
             self,
             outcomes=['success', 'fail', 'preempted'],
             input_keys=['task_number_in', 'error_step_in'],
-            output_keys=['position_x_out', 'position_y_out', 'orientation_z_in', 'orientation_w_in']
+            output_keys=['position_x_out', 'position_y_out', 'orientation_z_out', 'orientation_w_out']
         )
         self.rate = rospy.Rate(10)
         self.find_person = actionlib.SimpleActionClient(
@@ -61,7 +61,10 @@ class FindPersonState(smach.State):
         result = self.find_person.get_result()
         userdata.position_x_out = result.x
         userdata.position_y_out = result.y
-        rospy.loginfo("Person found at x={} y={}".format(result.x, result.y))
+        userdata.orientation_z_out = result.z
+        userdata.orientation_w_out = result.w
+        rospy.loginfo("Person found at x={} y={} z={} w={}".format(result.x, result.y,
+            result.z, result.w))
         return "success"
 
     def request_preempt(self):
@@ -92,7 +95,8 @@ class GotoXYState(smach.State):
         rospy.loginfo('Executing state GotoXY')
 
         rospy.loginfo(
-            "Goto x={} y={}".format(userdata.position_x_in, userdata.position_y_in))
+            "Goto x={} y={} z={} w={}".format(userdata.position_x_in, userdata.position_y_in,
+                userdata.orientation_z_in, userdata.orientation_w_in))
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
