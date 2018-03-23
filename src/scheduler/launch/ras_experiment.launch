@@ -3,6 +3,12 @@
     <!-- Can be set as argument during roslaunch -->
     <arg name="use_robot" default="true" />
     <arg name="use_tablet" default="true" />
+    <arg name="use_error" default="true" />
+    <arg name="use_camera" default="true" />
+
+    <arg name="test_error" default="false" />
+    <arg name="new_map" default="false" />
+    <arg name="gui" default="false" />
 
     <!-- Parameters -->
     <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
@@ -26,6 +32,25 @@
     <!-- Tablet -->
     <group if="$(arg use_tablet)">
         <include file="$(find tablet_interface)/launch/web.launch" />
-        <node name="task_name" pkg="tablet_interface" type="task_name.py" output="screen" />
+    </group>
+
+    <!-- Error detection -->
+    <group if="$(arg use_error)">
+        <include file="$(find adl_error_detection)/launch/detect_error.launch">
+            <arg name="is_test" value="$(arg test_error)" />
+        </include>
+
+        <group if="$(arg test_error)">
+            <!-- Run one of these afterwards:
+                 rosservice call /test_task_controller '{id: {stamp: now, task_number: 2}, request: {status: 2}, file: 2/0002.data}'
+                 rosservice call /test_task_controller '{id: {stamp: now, task_number: 0}, request: {status: 2}, file: 0/0002.data}'
+                 -->
+            <node name="test_error_detector" pkg="adl_error_detection" type="test_error_detector.py" output="screen" />
+        </group>
+    </group>
+
+    <!-- Camera, object detection, etc. -->
+    <group if="$(arg use_camera)">
+        <node name="jetson" pkg="scheduler" type="jetson.sh" output="screen" />
     </group>
 </launch>

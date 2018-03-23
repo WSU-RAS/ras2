@@ -150,7 +150,9 @@ class SchedulerServer:
         """
         Command the tablet to switch to a particular screen
         """
+        rospy.loginfo("Waiting for /tablet service")
         rospy.wait_for_service("tablet")
+        rospy.loginfo("Found /tablet service")
 
         # We don't show the go to object button when we've already navigated to it
         if showObject:
@@ -307,8 +309,6 @@ class SchedulerServer:
 
 class TabletData(object):
     face_url = "happy-cartoon-face-hi.png"
-    basename = 'http://casas.wsu.edu/smarthomestats/video/'
-    #basename = 'http://kyoto.kyoto.local/videos/'
 
     @staticmethod
     def get_data(task_number, error_step):
@@ -321,42 +321,42 @@ class TabletData(object):
         video_full_url = ''
 
         if task_number == Task.WATER_PLANTS:
-           video_full_url = TabletData.basename + 'waterplants.all.mp4'
+           video_full_url = 'waterplants.all.mp4'
            if error_step in [0, 1, 4, 5]:
-               video_step_url = TabletData.basename + 'waterplants.error1.mp4'
+               video_step_url = 'waterplants.error1.mp4'
                object_to_find = 'watercan'
            elif error_step == 2:
-               video_step_url = TabletData.basename + 'waterplants.error2.mp4'
+               video_step_url = 'waterplants.error2.mp4'
                object_to_find = 'plantcoffee'
            elif error_step == 3:
-               video_step_url = TabletData.basename + 'waterplants.error3.mp4'
+               video_step_url = 'waterplants.error3.mp4'
                object_to_find = "plantside"
 
         elif task_number == Task.TAKE_MEDS:
-            video_full_url = TabletData.basename + 'takemedication.all.mp4'
+            video_full_url = 'takemedication.all.mp4'
             if error_step in [0, 5, 11]:
-                video_step_url = TabletData.basename + 'takemedication.error1.mp4'
+                video_step_url = 'takemedication.error1.mp4'
                 object_to_find = 'food'
             elif error_step in [1, 2, 7, 10]:
-                video_step_url = TabletData.basename + 'takemedication.error2.mp4'
+                video_step_url = 'takemedication.error2.mp4'
                 object_to_find = 'glass'
             elif error_step in [3, 6, 9]:
-                video_step_url = TabletData.basename + 'takemedication.error3.mp4'
+                video_step_url = 'takemedication.error3.mp4'
                 object_to_find = 'pillbottle'
 
         elif task_number == Task.WALK_DOG:
-            video_full_url = TabletData.basename + 'walkdog.all.mp4'
+            video_full_url = 'walkdog.all.mp4'
             if error_step == 0:
-                video_step_url = TabletData.basename + 'walkdog.error1.mp4'
+                video_step_url = 'walkdog.error1.mp4'
                 object_to_find = 'umbrella'
             elif error_step == 1:
-                video_step_url = TabletData.basename + 'walkdog.error2.mp4'
+                video_step_url = 'walkdog.error2.mp4'
                 object_to_find = 'leash'
             elif error_step == 2:
-                video_step_url = TabletData.basename + 'walkdog.error3.mp4'
+                video_step_url = 'walkdog.error3.mp4'
                 object_to_find = 'keys'
             elif error_step == 3:
-                video_step_url = TabletData.basename + 'walkdog.error4.mp4'
+                video_step_url = 'walkdog.error4.mp4'
                 object_to_find = 'dog'
 
         return object_to_find, video_step_url, video_full_url

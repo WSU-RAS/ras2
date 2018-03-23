@@ -21,7 +21,7 @@ class FindObjectState(smach.State):
             self,
             outcomes = ['success', 'fail'],
             input_keys = ['task_number_in', 'error_step_in', 'base_in'],
-            output_keys = ['position_x_out', 'position_y_out']
+            output_keys = ['position_x_out', 'position_y_out', 'orientation_z_out', 'orientation_w_out']
         )
         self.rate = rospy.Rate(10)
 
@@ -32,7 +32,17 @@ class FindObjectState(smach.State):
 
         # according to the task number and error step the object needs to be queried
         if userdata.base_in == True:
-            object_to_find = 'base'
+		# if the task is water plants and take meds then the base is BASE2
+		if userdata.task_number_in in [0, 1]:
+			object_to_find = 'base2'
+		# if the task is walk the dog then the base is BASE1
+		elif userdata.task_number_in == 2:
+			object_to_find = 'base1'
+		# if the task is walk the dog and error step is take the leash then the base is BASE3
+		elif userdata.task_number_in == 2 and userdata.error_step_in == 6:
+			object_to_find = 'base3'
+
+
         else:
             object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
 
@@ -40,7 +50,10 @@ class FindObjectState(smach.State):
         if data is not None and len(data) != 0:
             userdata.position_x_out = data[0].x
             userdata.position_y_out = data[0].y
-            rospy.loginfo("Object {} found at x = {} y = {}".format(object_to_find, data[0].x, data[0].y))
+            userdata.orientation_z_out = data[0].z
+            userdata.orientation_w_out = data[0].w
+            rospy.loginfo("Object {} found at x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y,
+                data[0].z, data[0].w))
             return "success"
         else:
             rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
@@ -64,7 +77,7 @@ class GotoXYState(smach.State):
         smach.State.__init__(
             self,
             outcomes = ['success', 'fail', 'preempted'],
-            input_keys = ['position_x_in', 'position_y_in'])
+            input_keys = ['position_x_in', 'position_y_in', 'orientation_z_in', 'orientation_w_in'])
 
         self.rate = rospy.Rate(10)
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
@@ -80,14 +93,15 @@ class GotoXYState(smach.State):
     def execute(self, userdata):
         rospy.loginfo("Executing State GotoXY")
 
-        rospy.loginfo("Goto x = {} y = {}".format(userdata.position_x_in, userdata.position_y_in))
+        rospy.loginfo("Goto x = {} y = {} z = {} w = {}".format(userdata.position_x_in, userdata.position_y_in,
+            userdata.orientation_z_in, userdata.orientation_w_in))
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = userdata.position_x_in
         goal.target_pose.pose.position.y = userdata.position_y_in
-        # at some point we need to change this or may be depending upon the task number we can do it
-        goal.target_pose.pose.orientation.w = 1.0
+        goal.target_pose.pose.orientation.z = userdata.orientation_z_in
+        goal.target_pose.pose.orientation.w = userdata.orientation_w_in
 
         self.success = False
         self.is_running = True
@@ -125,6 +139,8 @@ class GotoObjectSMACH():
         sm.userdata.error_step = error_step
         sm.userdata.sm_pose_x = 0
         sm.userdata.sm_pose_y = 0
+        sm.userdata.sm_orient_z = 0
+        sm.userdata.sm_orient_w = 0
         sm.userdata.base = base
 
         with sm:
@@ -139,7 +155,9 @@ class GotoObjectSMACH():
                         'error_step_in' : 'error_step',
                         'base_in' : 'base',
                         'position_x_out' : 'sm_pose_x',
-                        'position_y_out' : 'sm_pose_y'}
+                        'position_y_out' : 'sm_pose_y',
+                        'orientation_z_out' : 'sm_orient_z',
+                        'orientation_w_out' : 'sm_orient_w'}
             )
 
             smach.StateMachine.add(
@@ -151,7 +169,9 @@ class GotoObjectSMACH():
                     'preempted' : 'error'},
                 remapping = {
                     'position_x_in' : 'sm_pose_x',
-                    'position_y_in' : 'sm_pose_y'})
+                    'position_y_in' : 'sm_pose_y',
+                    'orientation_z_in' : 'sm_orient_z',
+                    'orientation_w_in' : 'sm_orient_w'})
 
         outcome = sm.execute()
         return outcome
