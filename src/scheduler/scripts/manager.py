@@ -36,9 +36,9 @@ class SchedulerServer:
         self.use_robot = True
         self.use_tablet = True
         if rospy.has_param("ras"):
-            manager = rospy.get_param("ras")
-            self.use_robot = manager['use_robot']
-            self.use_tablet = manager['use_tablet']
+            ras = rospy.get_param("ras")
+            self.use_robot = ras['use_robot']
+            self.use_tablet = ras['use_tablet']
 
         # Called from the tablet when we want to go to a particular object
         # This then forwards it to our Go To node via the self.goto_client
@@ -308,6 +308,7 @@ class SchedulerServer:
 class TabletData(object):
     face_url = "happy-cartoon-face-hi.png"
     basename = 'http://casas.wsu.edu/smarthomestats/video/'
+    #basename = 'http://kyoto.kyoto.local/videos/'
 
     @staticmethod
     def get_data(task_number, error_step):
