@@ -30,7 +30,7 @@ rostopic pub /do_error/goal ras_msgs/DoErrorActionGoal '{header: auto, goal:{tas
 ```
 
 ## Autostart on boot
-To enable on boot:
+To enable on boot (check the service file to make sure the path is right):
 
     sudo cp src/scheduler/ras_experiment.service /etc/systemd/system/
     sudo systemctl daemon-reload
