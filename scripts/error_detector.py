@@ -13,12 +13,13 @@ from adl import check_sequence
 from adl.util import Items, TaskToDag
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
-from adl.util import Task, Goal
+from adl.util import Task, Goal, Status
 from casas import objects, rabbitmq
 
 from ras_msgs.msg import DoErrorAction, DoErrorGoal
 from ras_msgs.msg import TaskStatus
 from ras_msgs.srv import TaskController, TaskControllerResponse
+
 
 class ErrorDetector:
 
@@ -77,7 +78,7 @@ class ErrorDetector:
         # start task rosservice server
         self.task_service = rospy.Service(
             'task_controller', TaskController,
-             self.task_controller)
+            self.task_controller)
         rospy.loginfo("task_controller service running")
 
         self.do_error = SimpleActionClient('do_error', DoErrorAction)
@@ -92,7 +93,8 @@ class ErrorDetector:
         self.error_step = TaskToDag.mapping[self.task_number].subtask[error_key]
         self.error_code = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][2]
         self.error_index = len(self.task_sequence)
-        rospy.loginfo("Initiating error correction for {} at step {}".format(error_key, self.error_step))
+        rospy.loginfo("Initiating error correction for {} at step {}".format(
+            error_key, self.error_step))
         if self.do_error_connected:
             goal = DoErrorGoal()
             goal.task_number = self.task_number
@@ -110,12 +112,11 @@ class ErrorDetector:
 
     def __error_correction_active_cb(self):
         self.task_status.status = TaskStatus.PENDING
-        self.task_status.text = "ERROR CORRECTION"
+        self.task_status.text = "ERROR CORRECTION STARTED"
 
     def __error_correction_done_cb(self, terminal_state, result):
-        self.task_status.status = TaskStatus.ACTIVE
-        if terminal_state == GoalStatus.SUCCEEDED \
-           and result.status == 3 and result.is_complete:
+        result_bool = (result.status == Status.COMPLETED)
+        if terminal_state == GoalStatus.SUCCEEDED and result_bool:
             self.task_status.text = "ERROR CORRECTION SUCCEEDED"
             rospy.loginfo("Error correction succeeded")
             self.task_no_error = True
@@ -123,6 +124,7 @@ class ErrorDetector:
         else:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("Error correction failed")
+        self.task_status.status = TaskStatus.ACTIVE
 
     def __correct_sequence(self):
         # Fix error by adding missing step in sequence
@@ -152,8 +154,8 @@ class ErrorDetector:
                 rospy.loginfo("{}: START".format(Task.types[self.task_number]))
                 return TaskControllerResponse(response)
             elif self.task_number == request.id.task_number \
-               and request.request.status == TaskStatus.END \
-               and self.task_status.status == TaskStatus.ACTIVE:
+                    and request.request.status == TaskStatus.END \
+                    and self.task_status.status == TaskStatus.ACTIVE:
                 self.task_setup()
                 rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
                 return TaskControllerResponse(response)
