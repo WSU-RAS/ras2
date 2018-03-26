@@ -1,13 +1,14 @@
 <?xml version="1.0"?>
 <launch>
     <!-- Can be set as argument during roslaunch -->
-    <arg name="use_robot" default="true" />
+    <arg name="use_robot" default="false" />
     <arg name="use_tablet" default="true" />
     <arg name="use_error" default="true" />
-    <arg name="use_camera" default="true" />
+    <arg name="use_camera" default="false" />
 
-    <arg name="save_task" default="true" />
-    <arg name="is_test" default="false" /> <!-- testing error detection -->
+    <arg name="save_task" default="false" />
+    <arg name="is_test" default="true" /> <!-- testing error detection -->
+    <arg name="test_error" default="true" /> <!-- test only when using dummy data -->
     <arg name="new_map" default="false" />
     <arg name="gui" default="false" />
 
@@ -41,6 +42,14 @@
             <arg name="is_test" value="$(arg is_test)" />
             <arg name="save_task" value="$(arg save_task)" />
         </include>
+
+        <group if="$(arg test_error)">
+            <!-- Run one of these afterwards:
+                 rosservice call /test_task_controller '{id: {stamp: now, task_number: 2}, request: {status: 2}, file: 2/0002.data}'
+                 rosservice call /test_task_controller '{id: {stamp: now, task_number: 0}, request: {status: 2}, file: 0/0002.data}'
+                 -->
+            <node name="test_error_detector" pkg="adl_error_detection" type="test_error_detector.py" output="screen" />
+        </group>
     </group>
 
     <!-- Camera, object detection, etc. -->

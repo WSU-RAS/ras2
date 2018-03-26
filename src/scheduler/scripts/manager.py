@@ -106,7 +106,7 @@ class SchedulerServer:
             rospy.loginfo("manager: Found human")
         else:
             self.is_error_correction_done = True and self.use_robot
-            self.is_error_corrected = False or not self.use_robot
+            self.is_error_corrected = False
             self.do_error_feedback(
                 Status.FAILED, "TURTLEBOT FIND/GOTO HUMAN FAILED")
             rospy.logerr("manager: Did not find human")
