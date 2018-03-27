@@ -2,10 +2,11 @@
 <launch>
     <!-- Can be set as argument during roslaunch -->
     <arg name="is_test" default="false" />
-    <arg name="save_task" default="false" />
+    <arg name="save_task" default="true" />
 
     <!-- Parameters -->
     <param name="adl/is_test" value="$(arg is_test)" type="bool" />
+    <param name="adl/save_task" value="$(arg save_task)" type="bool" />
 
     <!-- Error Detection -->
     <node name="error_detector" pkg="adl_error_detection" type="error_detector.py" output="screen" />

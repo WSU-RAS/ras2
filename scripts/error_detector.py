@@ -13,37 +13,43 @@ from adl import check_sequence
 from adl.util import Items, TaskToDag
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
-from adl.util import Task, Goal
+from adl.util import Task, Goal, Status
 from casas import objects, rabbitmq
 
 from ras_msgs.msg import DoErrorAction, DoErrorGoal
 from ras_msgs.msg import TaskStatus
 from ras_msgs.srv import TaskController, TaskControllerResponse
 
+
 class ErrorDetector:
 
     def __init__(self):
-        rospy.loginfo("Initializing Error Detector")
+        rospy.loginfo("error_detector: Initializing error detector")
 
         rospack = rospkg.RosPack()
-        pkg_path = rospack.get_path('adl_error_detection')
+        self.pkg_path = rospack.get_path('adl_error_detection')
 
+        self.print_casas_log = True
+        self.save_fp = None
+        self.save_filename = None
         self.use_tablet = False
         if rospy.has_param("ras"):
             ras = rospy.get_param("ras")
             self.use_tablet = ras['use_tablet']
 
         self.test = False
+        self.save_task = True
         if rospy.has_param("adl"):
             adl = rospy.get_param("adl")
             self.test = adl['is_test']
+            self.save_task = adl['save_task']
         self.task_status = TaskStatus()
 
         self.task_setup()
         self.ros_setup()
 
         config = configparser.ConfigParser()
-        config.read(pkg_path + "/scripts/casas.cfg")
+        config.read(self.pkg_path + "/scripts/casas.cfg")
         default = config['DEFAULT']
 
         self.translate = dict()
@@ -65,34 +71,45 @@ class ErrorDetector:
         self.task_status.text = text
         self.task_sequence = []
         self.task_sequence_full = []
-        self.task_no_error = True
+        self.task_pause = False
         self.task_dag = None
+        self.error_key = None
         self.error_index = -1
         self.error_code = None
         if self.task_number >= 0:
             self.task_dag = TaskToDag.mapping[self.task_number].task_start
-        self.fix_error = False
 
     def ros_setup(self):
         # start task rosservice server
         self.task_service = rospy.Service(
             'task_controller', TaskController,
-             self.task_controller)
-        rospy.loginfo("task_controller service running")
+            self.task_controller)
+        rospy.loginfo("error_detector: task_controller service running")
 
         self.do_error = SimpleActionClient('do_error', DoErrorAction)
         self.do_error_connected = True
         if not self.do_error.wait_for_server(rospy.Duration(3)):
             self.do_error_connected = False
-            rospy.logerr("Action server failed to connect")
+            rospy.logerr("error_detector: do_error client failed to connect")
             return
 
     def start_error_correction(self, error_status):
-        error_key = error_status[4]
-        self.error_step = TaskToDag.mapping[self.task_number].subtask[error_key]
+        self.error_key = error_status[4]
+        self.error_step = TaskToDag.mapping[self.task_number].subtask[self.error_key]
         self.error_code = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][2]
         self.error_index = len(self.task_sequence)
-        rospy.loginfo("Initiating error correction for {} at step {}".format(error_key, self.error_step))
+        rospy.loginfo("error_detector: Initiating error correction for {} at step {}".format(
+            self.error_key, self.error_step))
+
+        if self.save_task:
+            time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+            start_str = "{}\t{}\t{}\t{}".format(time_str, "ERROR", "START", self.error_key)
+            self.save_fp.write("{}\n".format(start_str))
+
+        if self.test and not self.use_tablet:
+            self.task_pause = False
+            self.__correct_sequence()
+
         if self.do_error_connected:
             goal = DoErrorGoal()
             goal.task_number = self.task_number
@@ -102,27 +119,31 @@ class ErrorDetector:
                 done_cb=self.__error_correction_done_cb,
                 active_cb=self.__error_correction_active_cb,
                 feedback_cb=self.__error_correction_feedback_cb)
-        else:
-            self.fix_error = self.test and not self.use_tablet
 
     def __error_correction_feedback_cb(self, feedback):
-        rospy.loginfo("Error correction status={}".format(feedback.text))
+        rospy.loginfo("error_detector: do_error correction={}".format(feedback.text))
 
     def __error_correction_active_cb(self):
-        self.task_status.status = TaskStatus.PENDING
-        self.task_status.text = "ERROR CORRECTION"
+        self.task_pause = True
+        self.task_status.text = "ERROR CORRECTION STARTED"
 
     def __error_correction_done_cb(self, terminal_state, result):
-        self.task_status.status = TaskStatus.ACTIVE
-        if terminal_state == GoalStatus.SUCCEEDED \
-           and result.status == 3 and result.is_complete:
+        result_bool = (result.status == Status.COMPLETED)
+        if terminal_state == GoalStatus.SUCCEEDED and result_bool:
             self.task_status.text = "ERROR CORRECTION SUCCEEDED"
-            rospy.loginfo("Error correction succeeded")
-            self.task_no_error = True
+            rospy.loginfo("error_detector: do_error correction succeeded")
             self.__correct_sequence()
         else:
             self.task_status.text = "ERROR CORRECTION FAILED"
-            rospy.logerr("Error correction failed")
+            rospy.logerr("error_detector: do_error correction failed")
+
+        if self.save_task:
+            time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+            start_str = "{}\t{}\t{}\t{}".format(
+                time_str, "ERROR", "END", self.task_status.text.lower().replace(" ", "_"))
+            self.save_fp.write("{}\n".format(start_str))
+
+        self.task_pause = False
 
     def __correct_sequence(self):
         # Fix error by adding missing step in sequence
@@ -131,16 +152,18 @@ class ErrorDetector:
         # Redo next step when next step is dependent to error step
         if (next_step - self.error_step) == 1:
             self.task_sequence = self.task_sequence[:self.error_index + 1]
+        self.error_key = None
 
     def stop_error_correction(self):
         if self.do_error_connected:
             self.do_error.cancel_goal()
-            rospy.logwarn("Error correction cancelled")
+            rospy.logwarn("error_detector: do_error correction cancelled")
 
     def task_controller(self, request):
         response = TaskStatus(
             status=TaskStatus.SUCCESS,
             text='SUCCESS')
+
         if request.id.task_number < Task.size:
             if self.task_number < 0 \
                and request.request.status == TaskStatus.START \
@@ -149,16 +172,25 @@ class ErrorDetector:
                     task_num=request.id.task_number,
                     status=TaskStatus.ACTIVE,
                     text="ACTIVE")
-                rospy.loginfo("{}: START".format(Task.types[self.task_number]))
-                return TaskControllerResponse(response)
-            elif self.task_number == request.id.task_number \
-               and request.request.status == TaskStatus.END \
-               and self.task_status.status == TaskStatus.ACTIVE:
-                self.task_setup()
-                rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
+                if self.save_task:
+                    date_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+                    self.save_filename = "{}-{}".format(request.id.task_number, date_str)
+                    self.save_fp = open(
+                        self.pkg_path + "/log/" + self.save_filename, mode='w')
+                rospy.loginfo("error_detector: {}=START".format(Task.types[self.task_number]))
                 return TaskControllerResponse(response)
 
-        rospy.logwarn("Invalid task request")
+            elif self.task_number == request.id.task_number \
+                    and request.request.status == TaskStatus.END \
+                    and self.task_status.status == TaskStatus.ACTIVE:
+                if self.save_task:
+                    self.save_fp.close()
+                    self.save_fp = None
+                self.task_setup()
+                rospy.loginfo("error_detector: {}=END".format(Task.types[request.id.task_number]))
+                return TaskControllerResponse(response)
+
+        rospy.logwarn("task request invalid")
         response.status = TaskStatus.FAILED
         response.text = "FAILED"
         return TaskControllerResponse(response)
@@ -202,37 +234,35 @@ class ErrorDetector:
             seq=self.task_sequence+new_sequence,
             task_count=task_step,
             task_num=TaskToDag.mapping[self.task_number].num_tasks)
-        rospy.loginfo("status:{}".format(result))
+        rospy.loginfo("error_detector: {}".format(result))
         return result
 
     def __casas_cb(self, sensors):
-        if self.test and self.fix_error:
-            self.task_status.status = TaskStatus.ACTIVE
-            self.__correct_sequence()
-            self.fix_error = False
-
-        if self.task_status.status == TaskStatus.ACTIVE:
-            new_seq = []
-            for sensor in sensors:
+        new_seq = []
+        for sensor in sensors:
+            sensor_str = "{}\t{}\t{}".format(
+                str(sensor.stamp), str(sensor.target), str(sensor.message))
+            if self.print_casas_log:
+                rospy.loginfo(sensor_str)
+            if self.task_status.status == TaskStatus.ACTIVE:
                 self.__add_sensor_to_sequence(sensor, new_seq)
+            if self.save_task and self.save_fp is not None:
+                self.save_fp.write("{}\n".format(sensor_str))
 
+        if self.task_status.status == TaskStatus.ACTIVE and not self.task_pause:
             if len(new_seq) > 0:
                 check_result = self.__check_error(new_seq)
                 is_error_detected = not check_result[1] and not check_result[3]
-                if is_error_detected and self.task_no_error:
-                    self.task_sequence_full.append("*")
+                if is_error_detected:
+                    if self.error_key is None:
+                        self.task_sequence_full.append("*")
                     self.start_error_correction(check_result)
-                    self.task_no_error = False
 
                 # Concatenate new sensor readings into task sequence
                 self.task_sequence_full.extend(new_seq)
                 self.task_sequence.extend(new_seq)
                 rospy.loginfo("seq :{}".format("-".join(self.task_sequence)))
                 rospy.loginfo("seq*:{}".format("-".join(self.task_sequence_full)))
-        else:
-            for sensor in sensors:
-                rospy.loginfo("{}\t{}\t{}".format(
-                    str(sensor.stamp), str(sensor.target), str(sensor.message)))
 
     def casas_run(self):
         try:
@@ -241,7 +271,7 @@ class ErrorDetector:
             self.stop()
 
     def stop(self):
-        rospy.loginfo("Disconnecting casas connection")
+        rospy.loginfo("error_detector: disconnecting casas connection")
         self.rcon.stop()
 
 
