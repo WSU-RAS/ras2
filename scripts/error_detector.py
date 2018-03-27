@@ -183,7 +183,7 @@ class ErrorDetector:
     def __add_sensor_to_sequence(self, sensor, sequence):
         is_estimote = sensor.sensor_type == 'Estimote-Movement' \
             and sensor.message == 'MOVED'
-        is_door_closed = (sensor.target in ['D001', 'D011'] \
+        is_door_closed = sensor.target in ['D001', 'D011'] \
             and sensor.message == 'CLOSE'
         if is_estimote or is_door_closed:
             decode_key = Items.decode[sensor.target]
