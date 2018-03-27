@@ -12,7 +12,8 @@ import smach
 from findperson_smach import FindPersonSMACH
 from goto_object_smach import GotoObjectSMACH
 
-from adl.util import Goal
+from adl.util import Goal, Status
+
 
 class GotoServer:
 
@@ -30,38 +31,41 @@ class GotoServer:
         rospy.loginfo("error_step={}  error_object={}".format(
             goal.error_step, goal.error_object))
 
+        outcome == "error"
         if goal.type == Goal.BASE:
-            self.goto_feedback(1, "GO TO BASE STATE MACHINE STARTED")
+            self.goto_feedback(Status.STARTED, "GO TO BASE SMACH STARTED")
             rospy.loginfo("Initiating GotoBase State Machine")
             sm_gotoobject = GotoObjectSMACH()
             outcome = sm_gotoobject.execute(
-                task_number=goal.task_number, 
+                task_number=goal.task_number,
                 error_step=goal.error_step, base=True)
 
         elif goal.type == Goal.HUMAN:
-            self.goto_feedback(1, "FIND PERSON STATE MACHINE STARTED")
+            self.goto_feedback(Status.STARTED, "FIND PERSON SMACH STARTED")
             rospy.loginfo("Initiating FindPerson State Machine")
             sm_findperson = FindPersonSMACH()
             outcome = sm_findperson.execute(
                 task_number=goal.task_number, error_step=goal.error_step)
 
         elif goal.type == Goal.OBJECT:
-            self.goto_feedback(1, "GO TO OBJECT STATE MACHINE STARTED")
+            self.goto_feedback(Status.STARTED, "GO TO OBJECT SMACH STARTED")
             rospy.loginfo("Initiating GotoObject State Machine")
             sm_gotoobject = GotoObjectSMACH()
             outcome = sm_gotoobject.execute(
-                task_number=goal.task_number, 
+                task_number=goal.task_number,
                 error_step=goal.error_step, base=False)
 
-        is_success = False if outcome == "error" else True
+        is_success = True if outcome == "finish" else False
 
         if is_success:
-            self.goto_feedback(3, "STATE MACHINE SUCCESSFUL")
+            self.goto_feedback(Status.COMPLETED, "SMACH SUCCESSFUL")
+            rospy.loginfo("State machine successful")
         else:
-            self.goto_feedback(4, "STATE MACHINE FAILED") 
+            self.goto_feedback(Status.FAILED, "SMACH FAILED")
+            rospy.logwarn("State machine failed")
 
         goto_result = GotoResult()
-        goto_result.status = 3 if is_success else 4
+        goto_result.status = Status.COMPLETED if is_success else Status.FAILED
         goto_result.is_complete = is_success
         self.goto_server.set_succeeded(goto_result)
 

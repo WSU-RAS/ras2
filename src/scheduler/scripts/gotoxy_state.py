@@ -8,6 +8,19 @@ import actionlib
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
+from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
+
+def get_object_location(name):
+
+    rospy.wait_for_service("query_objects")
+
+    try:
+        query = rospy.ServiceProxy("query_objects", ObjectQuery)
+        result = query(name)
+        return result.locations
+    except rospy.ServiceException, e:
+        rospy.logerr("Service call failed: %s" % e)
+    return None
 
 class GotoXYState(smach.State):
 

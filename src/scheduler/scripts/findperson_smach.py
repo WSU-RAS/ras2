@@ -11,7 +11,7 @@ from smach_ros import SimpleActionState
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from find_person.msg import FindPersonAction, FindPersonGoal
-from gotoxy_state import GotoXYState
+from gotoxy_state import GotoXYState, get_object_location
 
 
 class FindPersonState(smach.State):
@@ -73,6 +73,81 @@ class FindPersonState(smach.State):
         rospy.logwarn("FindPersonState Preempted!")
 
 
+class GotoNewBaseState(smach.State):
+    def __init__(self):
+        smach.State.__init__(self,
+    outcomes = ['success', 'fail', 'preempted'],
+    input_keys = ['task_number_in', 'error_step_in']
+    )
+    self.rate = rospy.Rate(10)
+    self.find_person = actionlib.SimpleActionClient(
+        "find_person_server", FindPersonAction)
+    rospy.loginfo("Waiting for the find_person_server action server")
+    self.find_person.wait_for_server(rospy.Duration(2))
+
+    def done_cb(self, terminal_state, result):
+
+        if terminal_state == GoalStatus.SUCCEEDED:
+            self.success = True
+        self.is_running = False
+
+    def execute(self, userdata):
+        rospy.loginfo("Executing state Goto New Base")
+
+        goal = FindPersonGoal()
+        goal.task_number = userdata.task_number_in
+        goal.error_step = userdata.error_step_in
+
+        self.rate = rospy.Rate(10)
+        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+
+        rospy.loginfo("Waiting for the move_base action server")
+        self.move_base.wait_for_server(rospy.Duration(2))
+        # walk dog task
+        if userdata.task_number_in == 2:
+            if userdata.error_step_in in [1, 2, 3, 4]:
+                data = get_object_location('base4')
+                # watering the plants
+        elif userdata.task_number_in == 0 :
+            # error step in filling
+            if userdata.error_step_in == 1:
+                data = get_object_location('base5')
+
+        if data is not None and len(data) != 0:
+            rospy.loginfo("Moving Robot to new base to locate person")
+            rospy.loginfo("Moving Robot to {} x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y, data[0].z, data[0].w))
+            goal = MoveBaseGoal()
+            goal.target_pose.header.frame_id = "map"
+            goal.target_pose.header.stamp = rospy.Time.now()
+            goal.target_pose.pose.position.x = data[0].x
+            goal.target_pose.pose.position.y = data[0].y
+            goal.target_pose.pose.orientation.z = data[0].z
+            goal.target_pose.pose.orientation.w = data[0].w
+
+            self.success = False
+            self.is_running = True
+            self.move_base.send_goal(goal, done_cb=self.done_cb)
+
+            start_time = rospy.Time.now()
+            timeout = rospy.Duration(secs=60, nsecs=0)
+            while self.is_running and rospy.Time.now() - start_time < timeout:
+                if self.preempt_requested():
+                    self.service_preempt()
+                    return 'preempted'
+                    self.rate.sleep()
+
+                if not self.success:
+                    self.move_base.cancel_goal()
+                    rospy.loginfo("GotoNewBase failed")
+                    return "fail"
+
+                rospy.loginfo("GotoNewBase succeeded")
+                return "success"
+            else:
+                rospy.loginfo("Cannot retreive the location of base")
+                return "fail"
+
+
 class FindPersonSMACH():
 
     def __init__(self):
@@ -95,7 +170,7 @@ class FindPersonSMACH():
                 FindPersonState(),
                 transitions={
                     'success': 'GOTO_XY',
-                    'fail': 'error',
+                    'fail': 'GOTONEWBASE',
                     'preempted': 'error'},
                 remapping={
                     'task_number_in': 'task_number',
@@ -104,6 +179,17 @@ class FindPersonSMACH():
                     'position_y_out': 'sm_pose_y',
                     'orientation_z_out' : 'sm_orient_z',
                     'orientation_w_out' : 'sm_orient_w'
+                })
+            sm.add(
+                'GOTONEWBASE',
+                GotoNewBaseState(),
+                transitions = {
+                        'success' : 'FIND_PERSON',
+                        'fail' : 'error',
+                        'preempted' : 'error'},
+                remapping = {
+                        'task_number_in' : 'task_number',
+                        'error_step_in' : 'error_step'
                 })
 
             smach.StateMachine.add(
