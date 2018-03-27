@@ -2,6 +2,7 @@
 <launch>
     <!-- Can be set as argument during roslaunch -->
     <arg name="is_test" default="false" />
+    <arg name="save_task" default="false" />
 
     <!-- Parameters -->
     <param name="adl/is_test" value="$(arg is_test)" type="bool" />
