@@ -76,14 +76,14 @@ class FindPersonState(smach.State):
 class GotoNewBaseState(smach.State):
     def __init__(self):
         smach.State.__init__(self,
-    outcomes = ['success', 'fail', 'preempted'],
-    input_keys = ['task_number_in', 'error_step_in']
-    )
-    self.rate = rospy.Rate(10)
-    self.find_person = actionlib.SimpleActionClient(
-        "find_person_server", FindPersonAction)
-    rospy.loginfo("Waiting for the find_person_server action server")
-    self.find_person.wait_for_server(rospy.Duration(2))
+            outcomes = ['success', 'fail', 'preempted'],
+            input_keys = ['task_number_in', 'error_step_in']
+        )
+        self.rate = rospy.Rate(10)
+        self.find_person = actionlib.SimpleActionClient(
+            "find_person_server", FindPersonAction)
+        rospy.loginfo("Waiting for the find_person_server action server")
+        self.find_person.wait_for_server(rospy.Duration(2))
 
     def done_cb(self, terminal_state, result):
 
@@ -104,18 +104,19 @@ class GotoNewBaseState(smach.State):
         rospy.loginfo("Waiting for the move_base action server")
         self.move_base.wait_for_server(rospy.Duration(2))
         # walk dog task
+        data = None
         if userdata.task_number_in == 2:
             if userdata.error_step_in in [1, 2, 3, 4]:
-                data = get_object_location('base4')
+                data = get_object_location('entryway')
                 # watering the plants
-        elif userdata.task_number_in == 0 :
+        elif userdata.task_number_in == 0:
             # error step in filling
             if userdata.error_step_in == 1:
-                data = get_object_location('base5')
+                data = get_object_location('kitchen')
 
         if data is not None and len(data) != 0:
             rospy.loginfo("Moving Robot to new base to locate person")
-            rospy.loginfo("Moving Robot to {} x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y, data[0].z, data[0].w))
+            rospy.loginfo("Moving Robot to x = {} y = {} z = {} w = {}".format(data[0].x, data[0].y, data[0].z, data[0].w))
             goal = MoveBaseGoal()
             goal.target_pose.header.frame_id = "map"
             goal.target_pose.header.stamp = rospy.Time.now()
