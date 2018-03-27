@@ -24,7 +24,7 @@ class SchedulerServer:
     def __init__(self):
         self.is_goto_active = False
         self.goto_success = False
-        self.rate = rospy.Rate(10)
+        self.rate = rospy.Rate(1)
 
         rospy.on_shutdown(self.shutdown)
 
