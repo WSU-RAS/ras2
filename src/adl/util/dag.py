@@ -66,12 +66,15 @@ class WaterPlantsDag(object):
     }
     subtask_info = {
         # (description, query object, current dag, next dag if error)
+        #
+        # Note: for now we'll just show the button "guide me to object" for objects to
+        # be retreived since we aren't tracking them as they're moving.
         0: ('Retrieve water can', 'watercan', 'W', get_can, 1),
-        1: ('Fill water can', 'watercan', 'S', fill_can, 2),
+        1: ('Fill water can', None, 'S', fill_can, 2),
         2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plant2, 4),
         3: ('Water side table plant', 'plantside', 'P3', water_plant3, 4),
-        4: ('Rinse water can', 'watercan', 'S', rinse_can, 5),
-        5: ('Return water can', 'watercan', 'W', return_can, 6),
+        4: ('Rinse water can', None, 'S', rinse_can, 5),
+        5: ('Return water can', None, 'W', return_can, 6),
         6: ('Completed', None, None, None, 6)
     }
     num_tasks = 6
@@ -247,16 +250,16 @@ class TakeMedicationDag(object):
         # (description, query object, current dag, next dag if error)
         0: ('Retrieve food', 'food', 'F', get_food, 2),
         1: ('Retrieve cup', 'glass', 'C', get_cup, 2),
-        2: ('Fill cup', 'glass', 'S', fill_cup, 4),
+        2: ('Fill cup', None, 'S', fill_cup, 4),
         3: ('Retrieve medication', 'pillbottle', 'M', get_med, 5),
         4: ('Sit chair', None, 'CH', sit_chair, 6),
-        5: ('Eat food', 'food', 'F', eat_food, 7),
-        6: ('Take medication', 'pillbottle', 'M', take_med, 7),
-        7: ('Drink water', 'glass', 'C', drink_water, 9),
+        5: ('Eat food', None, 'F', eat_food, 7),
+        6: ('Take medication', None, 'M', take_med, 7),
+        7: ('Drink water', None, 'C', drink_water, 9),
         8: ('Stand up', None, 'CH', stand_up, 10),
         9: ('Return medication', 'pillbottle', 'M', return_med, 11),
-        10: ('Rinse cup', 'glass', 'C', rinse_cup, 12),
-        11: ('Throw garbage', 'food', 'G', throw_garbage, 12),
+        10: ('Rinse cup', None, 'C', rinse_cup, 12),
+        11: ('Throw garbage', None, 'G', throw_garbage, 12),
         12: ('Completed', None, None, None, 12)
     }
     num_tasks = 12
