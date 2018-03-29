@@ -107,16 +107,18 @@ class GotoNewBaseState(smach.State):
         data = None
         if userdata.task_number_in == 2:
             if userdata.error_step_in in [1, 2, 3, 4]:
-                data = get_object_location('entryway')
+                object_to_find = 'entryway'
                 # watering the plants
         elif userdata.task_number_in == 0:
             # error step in filling
             if userdata.error_step_in == 1:
-                data = get_object_location('kitchen')
+                object_to_find = 'kitchen'
+
+        data = get_object_location(object_to_find)
 
         if data is not None and len(data) != 0:
             rospy.loginfo("Moving Robot to new base to locate person")
-            rospy.loginfo("Moving Robot to x = {} y = {} z = {} w = {}".format(data[0].x, data[0].y, data[0].z, data[0].w))
+            rospy.loginfo("Moving Robot to {} x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y, data[0].z, data[0].w))
             goal = MoveBaseGoal()
             goal.target_pose.header.frame_id = "map"
             goal.target_pose.header.stamp = rospy.Time.now()
