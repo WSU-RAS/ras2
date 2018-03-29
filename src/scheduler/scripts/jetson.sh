@@ -12,4 +12,10 @@ echo "Jetson is online!"
 trap 'ssh jetson "killall roslaunch"' 0 2 15
 
 # Run on the NVidia Jetson
-ssh jetson 'roslaunch object_detection everything.launch'
+lab="$1"
+
+if [[ $lab == true  || $lab == True ]]; then
+    ssh jetson 'roslaunch object_detection everything.launch lab:=true'
+else
+    ssh jetson 'roslaunch object_detection everything.launch lab:=false'
+fi
