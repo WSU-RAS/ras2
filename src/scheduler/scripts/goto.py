@@ -31,8 +31,7 @@ class GotoServer:
         rospy.loginfo("error_step={}  error_object={}".format(
             goal.error_step, goal.error_object))
 
-        # Gabe: what is this for?
-        #outcome == "error"
+        outcome = "error"
 
         if goal.type == Goal.BASE:
             self.goto_feedback(Status.STARTED, "GO TO BASE SMACH STARTED")
