@@ -139,7 +139,7 @@ class SchedulerServer:
         do_error_feedback.text = text
         self.do_error.publish_feedback(do_error_feedback)
 
-    def tablet_setup(self, screen, showObject=True):
+    def tablet_setup(self, screen, showObject=True, navigateComplete=False):
         """
         Command the tablet to switch to a particular screen
         """
@@ -148,7 +148,9 @@ class SchedulerServer:
         rospy.loginfo("manager: Found /tablet service")
 
         # We don't show the go to object button when we've already navigated to it
-        if showObject:
+        if navigateComplete:
+            object_name = "done"
+        elif showObject:
             object_name = self.object_name
         else:
             object_name = ""
@@ -188,11 +190,12 @@ class SchedulerServer:
             # Return to the options screen
             self.tablet_setup("options")
         elif response == "goto":
-            # Show options but without the go to object button
-            self.tablet_setup("options", showObject=False)
             rospy.loginfo("manager: Sending turtlebot to find object")
             if self.use_robot:
                 success = self.tablet_goto_execute(Goal.OBJECT)
+            else:
+                # Fake getting to object successfully on the tablet
+                self.tablet_setup("options", navigateComplete=True)
 
         tablet_result = TabletResult()
         tablet_result.success = success
@@ -229,11 +232,17 @@ class SchedulerServer:
                 rospy.loginfo(msg)
                 self.tablet_feedback(Status.COMPLETED, "TURTLEBOT COMPLETED TASK")
                 self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT COMPLETED TASK")
+
+                self.tablet_setup("options", navigateComplete=True) # Success, say "Here you go"
                 return True
 
         rospy.logerr(err_msg)
         self.tablet_feedback(Status.FAILED, "TURTLEBOT FAILED")
         self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT FAILED")
+
+        # Show options but without the go to object button
+        self.tablet_setup("options", showObject=False)
+
         return False
 
     def tablet_feedback(self, status, text):
