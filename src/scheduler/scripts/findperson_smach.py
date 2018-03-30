@@ -11,7 +11,8 @@ from smach_ros import SimpleActionState
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from find_person.msg import FindPersonAction, FindPersonGoal
-from gotoxy_state import GotoXYState, get_object_location
+#from gotoxy_state import GotoXYState, get_object_location
+from gotoxy_state_seq import GotoXYState, get_object_location
 
 
 class FindPersonState(smach.State):

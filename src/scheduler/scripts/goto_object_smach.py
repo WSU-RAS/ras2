@@ -11,16 +11,84 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
 from adl.util import Task, TaskToDag
-from gotoxy_state import GotoXYState, get_object_location
+#from gotoxy_state import GotoXYState, get_object_location
+from gotoxy_state_seq import GotoXYState, get_object_location
 
+#Logic for figuring out which points to use
+def multi_path(origin, object_name):
+    names = []
+
+    #From base1
+    if (origin == "base1" and object_name == "base2"):
+        names.append('b1_b2_1')
+        names.append('b1_b2_2')
+        names.append('b1_b2_3')
+        names.append('base2')
+    elif (origin == "base1" and object_name == "base3"):
+        names.append('b1_b3_1')
+        names.append('base1')
+
+    #From base2
+    elif (origin == "base2" and object_name == "base1"):
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+        names.append('b2_b1_3')
+        names.append('base2')
+    elif (origin == "base2" and object_name == "base3"):
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+        names.append('b1_b3_1')
+        names.append('base2')
+
+    #From base3
+    elif (origin == "base3" and object_name == "base1"):
+        names.append('b2_b1_3')
+        names.append('base3')
+    elif (origin == "base3" and object_name == "base2"):
+        names.append('b1_b2_1')
+        names.append('b1_b2_2')
+        names.append('b2_b1_3')
+        names.append('base3')
+
+    #stupid plant
+    elif ( (origin == "base1" or origin == "base3") and object_name == "plantside"):
+        names.append('b1_b2_1')
+        names.append('b1_b2_2')
+        names.append('b1_b2_3')
+        names.append('plantside')
+
+    #Objects
+    elif (origin == "base1" or origin == "base3"):
+        names.append('b1_b2_1')
+        names.append(object_name)
+
+    #Objects
+    elif (origin == "base2"):
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+        names.append(object_name)
+
+    #Rest
+    else:
+        names.append(object_name)
+    
+    points = []
+    for name in names:
+        result = get_object_location(name)
+        points.append((result[0].x,result[0].y,result[0].z,result[0].w))
+
+    return points
 
 class FindObjectState(smach.State):
 
     def __init__(self):
+        #Added value to keep track of last position
+        self.last_object = "base1"
+
         smach.State.__init__(
             self,
             outcomes=['success', 'fail'],
-            input_keys=['task_number_in', 'error_step_in', 'base_in'],
+            input_keys=['task_number_in', 'error_step_in', 'base_in', 'points_out'],
             output_keys=['position_x_out', 'position_y_out',
                          'orientation_z_out', 'orientation_w_out']
         )
@@ -36,15 +104,26 @@ class FindObjectState(smach.State):
             # if the task is water plants and take meds then the base is BASE2
             if userdata.task_number_in in [0, 1]:
                 object_to_find = 'base2'
+
             # if the task is walk the dog then the base is BASE1
             elif userdata.task_number_in == 2:
                 object_to_find = 'base1'
+
             # if the task is walk the dog and error step is take the leash then the base is BASE3
             elif userdata.task_number_in == 2 and userdata.error_step_in == 6:
                 object_to_find = 'base3'
+
+
         else:
             object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
 
+        path_goals = multi_path(self.last_object, object_to_find)
+        userdata.points = path_goals
+
+        #Tracking last object
+        self.last_object = object_to_find
+        return "success"
+        '''
         data = get_object_location(object_to_find)
         if data is not None and len(data) != 0:
             userdata.position_x_out = data[0].x
@@ -57,6 +136,7 @@ class FindObjectState(smach.State):
         else:
             rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
             return "fail"
+        '''
 
 class GotoObjectSMACH():
 
@@ -72,6 +152,8 @@ class GotoObjectSMACH():
         sm.userdata.sm_orient_z = 0
         sm.userdata.sm_orient_w = 0
         sm.userdata.base = base
+        #chris' points
+        sm.userdata.sm_points = []
 
         with sm:
             smach.StateMachine.add(
@@ -87,7 +169,8 @@ class GotoObjectSMACH():
                     'position_x_out': 'sm_pose_x',
                     'position_y_out': 'sm_pose_y',
                     'orientation_z_out': 'sm_orient_z',
-                    'orientation_w_out': 'sm_orient_w'}
+                    'orientation_w_out': 'sm_orient_w',
+                    'points_out': 'sm_points'}
             )
 
             smach.StateMachine.add(
@@ -101,7 +184,9 @@ class GotoObjectSMACH():
                     'position_x_in': 'sm_pose_x',
                     'position_y_in': 'sm_pose_y',
                     'orientation_z_in': 'sm_orient_z',
-                    'orientation_w_in': 'sm_orient_w'})
+                    'orientation_w_in': 'sm_orient_w',
+                    'points_in': 'sm_points'}
+            )
 
         outcome = sm.execute()
         return outcome
