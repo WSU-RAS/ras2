@@ -66,6 +66,9 @@
         <include file="$(find tablet_interface)/launch/web.launch" />
     </group>
 
+    <!-- Allow powering off from experimenter interface -->
+    <node name="poweroff" pkg="scheduler" type="poweroff.py" output="screen" />
+
     <!-- Error detection -->
     <group if="$(arg use_error)">
         <include file="$(find adl_error_detection)/launch/detect_error.launch">
