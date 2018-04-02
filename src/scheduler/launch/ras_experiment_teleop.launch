@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Can be set as argument during roslaunch -->
+    <arg name="use_robot" default="false" /> <!-- use teleop rather than navigation, camera, etc. -->
+    <arg name="use_tablet" default="true" />
+    <arg name="use_error" default="true" />
+
+    <arg name="save_task" default="true" />
+    <arg name="is_test" default="false" /> <!-- testing error detection -->
+
+    <!-- Parameters -->
+    <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
+    <param name="ras/use_tablet" value="$(arg use_tablet)" type="bool" />
+
+    <!-- Manager -->
+    <node name="manager" pkg="scheduler" type="manager.py" output="screen" />
+    
+    <!-- Robot for teleop; then connect via keyboard teleop or via Android app -->
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch"/>
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch"/>
+
+    <!-- Tablet -->
+    <group if="$(arg use_tablet)">
+        <include file="$(find tablet_interface)/launch/web.launch" />
+    </group>
+
+    <!-- Allow powering off from experimenter interface -->
+    <node name="poweroff" pkg="scheduler" type="poweroff.py" output="screen" />
+
+    <!-- Error detection -->
+    <group if="$(arg use_error)">
+        <include file="$(find adl_error_detection)/launch/detect_error.launch">
+            <arg name="is_test" value="$(arg is_test)" />
+            <arg name="save_task" value="$(arg save_task)" />
+        </include>
+    </group>
+</launch>
