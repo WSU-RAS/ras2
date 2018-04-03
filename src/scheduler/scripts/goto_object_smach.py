@@ -121,7 +121,9 @@ class GotoObjectSMACH():
                     'orientation_w_in': 'sm_orient_w',
                     'points_in': 'sm_points'}
             )
-
+        sis = smach_ros.IntrospectionServer('GotoObjectSMACH', sm, '/GotoObjectSMACH')
+        sis.start()
+        
         outcome = sm.execute()
         return outcome
 
