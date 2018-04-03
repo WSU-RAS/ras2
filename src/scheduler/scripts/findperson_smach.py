@@ -14,7 +14,7 @@ from find_person.msg import FindPersonAction, FindPersonGoal
 #from gotoxy_state import GotoXYState, get_object_location
 from gotoxy_state_seq import GotoXYState, get_object_location
 from geometry_msgs.msg import Pose, Point, Quaternion
-import settings
+
 
 #Logic for figuring out which points to use
 def multi_path(origin, object_name):
@@ -186,14 +186,14 @@ class FindPersonState(smach.State):
             return "fail"
 
         result = self.find_person.get_result()
-        points = multi_path(settings.last_object, "")
+        points = multi_path(FindPersonSMACH.last_object, "")
 
         points.append((result.x, result.y, result.z, result.w))
 
-        rospy.loginfo("Last object: {}, Points: {}".format(settings.last_object, points))
+        rospy.loginfo("Last object: {}, Points: {}".format(FindPersonSMACH.last_object, points))
 
         userdata.points_out = points
-        settings.last_object = ""
+        FindPersonSMACH.last_object = ""
 
         '''
         userdata.position_x_out = result.x
@@ -282,7 +282,7 @@ class GotoNewBaseState(smach.State):
         if userdata.task_number_in == 2:
             if userdata.error_step_in in [1, 2, 3, 4]:
                 object_to_find = 'entryway'
-                # watering the plants
+        # watering the plants
         elif userdata.task_number_in == 0:
             # error step in filling
             if userdata.error_step_in == 1:
@@ -290,8 +290,8 @@ class GotoNewBaseState(smach.State):
 
         #data = get_object_location(object_to_find)
 
-        data = multi_path2(settings.last_object, object_to_find)
-        settings.last_object = object_to_find
+        data = multi_path2(FindPersonSMACH.last_object, object_to_find)
+        FindPersonSMACH.last_object = object_to_find
 
         #multi-points
         self.pose_seq = list()
@@ -326,9 +326,10 @@ class GotoNewBaseState(smach.State):
 
 
 class FindPersonSMACH():
+    last_object = "base1"
 
-    def __init__(self):
-        pass
+    def __init__(self, last_object):
+        self.last_object = last_object
 
     def execute(self, task_number=2, error_step=3):
         # SMACH State Machine
