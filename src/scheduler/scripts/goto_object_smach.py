@@ -73,7 +73,7 @@ def multi_path(origin, object_name):
     #Rest
     else:
         names.append(object_name)
-    
+
     points = []
     for name in names:
         result = get_object_location(name)
@@ -87,9 +87,9 @@ class FindObjectState(smach.State):
         smach.State.__init__(
             self,
             outcomes=['success', 'fail'],
-            input_keys=['task_number_in', 'error_step_in', 'base_in', 'points_out'],
+            input_keys=['task_number_in', 'error_step_in', 'base_in'],
             output_keys=['position_x_out', 'position_y_out',
-                         'orientation_z_out', 'orientation_w_out']
+                         'orientation_z_out', 'orientation_w_out', 'points_out']
         )
         self.rate = rospy.Rate(10)
 

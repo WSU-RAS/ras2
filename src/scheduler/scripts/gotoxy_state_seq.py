@@ -55,7 +55,7 @@ class GotoXYState(smach.State):
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now() 
+        goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose = self.pose_seq[self.goal_cnt]
         rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
         rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
@@ -72,7 +72,7 @@ class GotoXYState(smach.State):
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
 
         if status == 3:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached") 
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
             if self.goal_cnt < len(self.pose_seq):
                 next_goal = MoveBaseGoal()
                 next_goal.target_pose.header.frame_id = "map"
@@ -80,7 +80,7 @@ class GotoXYState(smach.State):
                 next_goal.target_pose.pose = self.pose_seq[self.goal_cnt]
                 rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
                 rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
-                self.move_base.send_goal(next_goal, self.done_cb, self.active_cb, self.feedback_cb) 
+                self.move_base.send_goal(next_goal, self.done_cb, self.active_cb, self.feedback_cb)
             else:
                 rospy.loginfo("Final goal pose reached!")
                 rospy.signal_shutdown("Final goal pose reached!")
@@ -110,7 +110,7 @@ class GotoXYState(smach.State):
 
         for point in userdata.points_in:
             self.pose_seq.append(Pose(Point(point[0],point[1],0), Quaternion(0,0,point[2],point[3])))
-            #self.goal_cnt = self.goal_cnt + 1
+            #goal_cnt = goal_cnt + 1
 
         #run it
         self.success = False
