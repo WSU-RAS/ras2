@@ -23,6 +23,7 @@ class GotoServer:
             execute_cb=self.goto_execute,
             auto_start=False)
         self.goto_server.start()
+        self.last_object = "base1"
 
     def goto_execute(self, goal):
         rospy.loginfo("Executing {} for {}".format(
@@ -35,26 +36,27 @@ class GotoServer:
         if goal.type == Goal.BASE:
             self.goto_feedback(Status.STARTED, "GO TO BASE SMACH STARTED")
             rospy.loginfo("Initiating GotoBase State Machine")
-            sm_gotoobject = GotoObjectSMACH()
-            outcome = sm_gotoobject.execute(
+            sm = GotoObjectSMACH(last_object=self.last_object)
+            outcome = sm.execute(
                 task_number=goal.task_number,
                 error_step=goal.error_step, base=True)
 
         elif goal.type == Goal.HUMAN:
             self.goto_feedback(Status.STARTED, "FIND PERSON SMACH STARTED")
             rospy.loginfo("Initiating FindPerson State Machine")
-            sm_findperson = FindPersonSMACH()
-            outcome = sm_findperson.execute(
+            sm = FindPersonSMACH(last_object=self.last_object)
+            outcome = sm.execute(
                 task_number=goal.task_number, error_step=goal.error_step)
 
         elif goal.type == Goal.OBJECT:
             self.goto_feedback(Status.STARTED, "GO TO OBJECT SMACH STARTED")
             rospy.loginfo("Initiating GotoObject State Machine")
-            sm_gotoobject = GotoObjectSMACH()
-            outcome = sm_gotoobject.execute(
+            sm = GotoObjectSMACH(last_object=self.last_object)
+            outcome = sm.execute(
                 task_number=goal.task_number,
                 error_step=goal.error_step, base=False)
 
+        self.last_object = sm.last_object
         is_success = True if outcome == "finish" else False
 
         if is_success:
