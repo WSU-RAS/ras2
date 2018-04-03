@@ -276,7 +276,8 @@ class FindPersonSMACH():
                     'orientation_w_in' : 'sm_orient_w',
                     'points_in': 'sm_points'
                 })
-
+        sis = smach_ros.IntrospectionServer('FindPersonSMACH', sm, '/FindPersonSMACH')
+        sis.start()
         outcome =  sm.execute()
         return outcome
 
