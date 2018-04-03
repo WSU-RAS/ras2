@@ -150,7 +150,7 @@ class SchedulerServer:
         # We don't show the go to object button when we've already navigated to it
         if navigateComplete:
             object_name = "done"
-        elif showObject:
+        elif showObject and self.object_name is not None:
             object_name = self.object_name
         else:
             object_name = ""

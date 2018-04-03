@@ -55,7 +55,8 @@ class MoveBaseSeq():
     def feedback_cb(self, feedback):
         #To print current pose at each feedback:
         #rospy.loginfo("Feedback for goal "+str(self.goal_cnt)+": "+str(feedback))
-        rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
+        #rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
+        pass
 
     def done_cb(self, status, result):
         self.goal_cnt += 1
@@ -99,7 +100,6 @@ class MoveBaseSeq():
         rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
         rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
         self.client.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
-        rospy.spin()
 
 
 class GotoXYState(smach.State):

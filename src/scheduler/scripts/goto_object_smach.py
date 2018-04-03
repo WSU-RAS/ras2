@@ -14,6 +14,8 @@ from adl.util import Task, TaskToDag
 #from gotoxy_state import GotoXYState, get_object_location
 from gotoxy_state_seq import GotoXYState, get_object_location
 
+import settings
+
 #Logic for figuring out which points to use
 def multi_path(origin, object_name):
     names = []
@@ -82,9 +84,6 @@ def multi_path(origin, object_name):
 class FindObjectState(smach.State):
 
     def __init__(self):
-        #Added value to keep track of last position
-        self.last_object = "base1"
-
         smach.State.__init__(
             self,
             outcomes=['success', 'fail'],
@@ -117,11 +116,11 @@ class FindObjectState(smach.State):
         else:
             object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
 
-        path_goals = multi_path(self.last_object, object_to_find)
+        path_goals = multi_path(settings.last_object, object_to_find)
+        #Tracking last object
+        settings.last_object = object_to_find
         userdata.points = path_goals
 
-        #Tracking last object
-        self.last_object = object_to_find
         return "success"
         '''
         data = get_object_location(object_to_find)

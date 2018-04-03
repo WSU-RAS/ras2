@@ -14,7 +14,6 @@ from goto_object_smach import GotoObjectSMACH
 
 from adl.util import Goal, Status
 
-
 class GotoServer:
 
     def __init__(self):

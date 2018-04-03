@@ -9,6 +9,7 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
+from geometry_msgs.msg import Pose, Point, Quaternion
 
 def get_object_location(name):
 
@@ -45,18 +46,20 @@ class GotoXYState(smach.State):
     def feedback_cb(self, feedback):
         #To print current pose at each feedback:
         #rospy.loginfo("Feedback for goal "+str(self.goal_cnt)+": "+str(feedback))
-        rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
+        #rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
+        pass
 
     #new func
     def movebase_client(self):
+        rospy.logerr("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
+
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now() 
         goal.target_pose.pose = self.pose_seq[self.goal_cnt]
         rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
         rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
-        self.client.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
-        rospy.spin()
+        self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
 
     #edited func
     def done_cb(self, status, result):
@@ -77,7 +80,7 @@ class GotoXYState(smach.State):
                 next_goal.target_pose.pose = self.pose_seq[self.goal_cnt]
                 rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
                 rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
-                self.client.send_goal(next_goal, self.done_cb, self.active_cb, self.feedback_cb) 
+                self.move_base.send_goal(next_goal, self.done_cb, self.active_cb, self.feedback_cb) 
             else:
                 rospy.loginfo("Final goal pose reached!")
                 rospy.signal_shutdown("Final goal pose reached!")
@@ -105,10 +108,9 @@ class GotoXYState(smach.State):
         self.pose_seq = list()
         self.goal_cnt = 0
 
-        for point in userdata:
+        for point in userdata.points_in:
             self.pose_seq.append(Pose(Point(point[0],point[1],0), Quaternion(0,0,point[2],point[3])))
-            goal_cnt = goal_cnt + 1
-        
+            #self.goal_cnt = self.goal_cnt + 1
 
         #run it
         self.success = False
