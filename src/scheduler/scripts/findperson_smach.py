@@ -12,7 +12,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from find_person.msg import FindPersonAction, FindPersonGoal
 #from gotoxy_state import GotoXYState, get_object_location
-from gotoxy_state_seq import GotoXYState, get_object_location, multi_path
+from gotoxy_state_seq import GotoXYState, get_object_location, multi_path, Goto_points
 from geometry_msgs.msg import Pose, Point, Quaternion
 
 
@@ -100,9 +100,8 @@ class GotoNewBaseState(smach.State):
         )
         self.rate = rospy.Rate(10)
 
-        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
-        rospy.loginfo("Waiting for the move_base action server")
-        self.move_base.wait_for_server(rospy.Duration(2))
+        rospy.loginfo("GotoNewBaseState has been initialized, Waiting for the move_base action server")       
+
 
     #new func
     def active_cb(self):
@@ -155,6 +154,11 @@ class GotoNewBaseState(smach.State):
         self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
 
     def execute(self, userdata):
+        ''' -Chris_test
+        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+        self.move_base.wait_for_server(rospy.Duration(2))
+        '''
+
         rospy.loginfo("Executing state Goto New Base")
 
         # walk dog task
@@ -169,24 +173,26 @@ class GotoNewBaseState(smach.State):
                 object_to_find = 'kitchen'
 
         #data = get_object_location(object_to_find)
-
-
         data = multi_path(settings.last_object, object_to_find)
         settings.last_object = object_to_find
 
-
+        ''' -Chris_test
         #multi-points
         self.pose_seq = list()
         self.goal_cnt = 0
 
         for point in data:
             self.pose_seq.append(Pose(Point(point[0],point[1],0), Quaternion(0,0,point[2],point[3])))
-            #goal_cnt = goal_cnt + 1
 
         #run it
         self.success = False
         self.is_running = True
         self.movebase_client()
+        ''' 
+
+        #Chris_test replacement code
+        args = [self.is_running, self.success, data]
+        Goto_points(args)
 
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=120, nsecs=0)
@@ -208,7 +214,8 @@ class GotoNewBaseState(smach.State):
 
 
 class FindPersonSMACH():
-    last_object = "base1"
+    #This is probably wrong, so commented out -Chris
+    #last_object = "base1"
 
     def __init__(self, last_object):
         self.last_object = last_object

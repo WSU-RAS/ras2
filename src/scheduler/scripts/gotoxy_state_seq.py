@@ -11,6 +11,76 @@ from actionlib_msgs.msg import GoalStatus
 from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
 from geometry_msgs.msg import Pose, Point, Quaternion
 
+class Goto_points():
+
+
+    def __init__(self, args):
+        #Utilize arguments
+        data = args[2]
+
+        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
+        self.move_base.wait_for_server(rospy.Duration(2))
+
+        #multi-points
+        self.pose_seq = list()
+        self.goal_cnt = 0
+
+        for point in data:
+            self.pose_seq.append(Pose(Point(point[0],point[1],0), Quaternion(0,0,point[2],point[3])))
+
+        self.movebase_client(args)
+
+
+    def movebase_client(self, args):
+    rospy.loginfo("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
+
+    goal = MoveBaseGoal()
+    goal.target_pose.header.frame_id = "map"
+    goal.target_pose.header.stamp = rospy.Time.now()
+    goal.target_pose.pose = self.pose_seq[self.goal_cnt]
+    rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
+    rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
+    self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
+
+
+    def active_cb(self, args):
+        rospy.loginfo("Goal pose "+str(self.goal_cnt+1)+" is now being processed by the Action Server...")
+
+
+    #This can be used to set the goal every so often
+    def feedback_cb(self, feedback, args):
+        #rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
+        pass
+
+
+    def done_cb(self, status, result, args):
+        self.goal_cnt += 1
+
+        if status == 2:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
+
+        elif status == 3:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
+            if self.goal_cnt < len(self.pose_seq):
+                self.movebase_client()
+                return
+            else:
+                rospy.loginfo("Final goal pose reached!")
+                rospy.signal_shutdown("Final goal pose reached!")
+                args[1] = True
+
+        elif status == 4:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" was aborted by the Action Server")
+            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" aborted, shutting down!")
+
+        elif status == 5:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" has been rejected by the Action Server")
+            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" rejected, shutting down!")
+
+        elif status == 8:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
+
+        args[0] = False
 
 
 #Logic for figuring out which points to use
@@ -69,8 +139,9 @@ def multi_path(origin, object_name):
     else:
         names.append('b1_b2_1')
 
-    #Append actual goal object to goal_names_list
-    names.append(object_name)
+    #Append actual goal object to goal_names_list, unless it is empty (incase of human)
+    if (object_name != ""):    
+        names.append(object_name)
 
     points = []
     for name in names:
