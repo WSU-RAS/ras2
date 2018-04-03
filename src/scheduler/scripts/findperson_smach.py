@@ -211,7 +211,7 @@ class FindPersonSMACH():
     last_object = "base1"
 
     def __init__(self, last_object):
-        self.last_object = last_object
+        FindPersonSMACH.last_object = last_object
 
     def execute(self, task_number=2, error_step=3):
         # SMACH State Machine

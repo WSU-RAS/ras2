@@ -75,7 +75,7 @@ class GotoObjectSMACH():
     last_object = "base1"
 
     def __init__(self, last_object):
-        self.last_object = last_object
+        GotoObjectSMACH.last_object = last_object
 
     def execute(self, task_number, error_step, base):
         sm = smach.StateMachine(outcomes=['finish', 'error'])
