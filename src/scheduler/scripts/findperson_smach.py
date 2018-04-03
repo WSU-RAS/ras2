@@ -67,7 +67,7 @@ def multi_path(origin, object_name):
     elif (origin == "base2"):
         names.append('b2_b1_1')
         names.append('b2_b1_2')
-    
+
     points = []
     for name in names:
         result = get_object_location(name)
@@ -132,7 +132,7 @@ def multi_path2(origin, object_name):
     #Rest
     else:
         names.append(object_name)
-    
+
     points = []
     for name in names:
         result = get_object_location(name)
@@ -240,19 +240,13 @@ class GotoNewBaseState(smach.State):
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
 
         elif status == 3:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached") 
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
             if self.goal_cnt < len(self.pose_seq):
-                next_goal = MoveBaseGoal()
-                next_goal.target_pose.header.frame_id = "map"
-                next_goal.target_pose.header.stamp = rospy.Time.now()
-                next_goal.target_pose.pose = self.pose_seq[self.goal_cnt]
-                rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
-                rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
-                self.move_base.send_goal(next_goal, self.done_cb, self.active_cb, self.feedback_cb) 
+                self.movebase_client()
+                return
             else:
                 rospy.loginfo("Final goal pose reached!")
                 rospy.signal_shutdown("Final goal pose reached!")
-                self.is_running = False
                 self.success = True
 
         elif status == 4:
@@ -266,13 +260,15 @@ class GotoNewBaseState(smach.State):
         elif status == 8:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
 
+        self.is_running = False
+
     #new func
     def movebase_client(self):
-        rospy.logerr("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
+        rospy.loginfo("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
-        goal.target_pose.header.stamp = rospy.Time.now() 
+        goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose = self.pose_seq[self.goal_cnt]
         rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
         rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
@@ -281,11 +277,6 @@ class GotoNewBaseState(smach.State):
     def execute(self, userdata):
         rospy.loginfo("Executing state Goto New Base")
 
-        """
-        goal = FindPersonGoal()
-        goal.task_number = userdata.task_number_in
-        goal.error_step = userdata.error_step_in
-        """
         # walk dog task
         data = None
         if userdata.task_number_in == 2:
@@ -333,67 +324,6 @@ class GotoNewBaseState(smach.State):
         rospy.loginfo("GotoXYNewBase succeeded")
         return "success"
 
-    '''
-    def execute(self, userdata):
-        rospy.loginfo("Executing state Goto New Base")
-
-        goal = FindPersonGoal()
-        goal.task_number = userdata.task_number_in
-        goal.error_step = userdata.error_step_in
-
-        self.rate = rospy.Rate(10)
-        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
-
-        rospy.loginfo("Waiting for the move_base action server")
-        self.move_base.wait_for_server(rospy.Duration(2))
-        # walk dog task
-        data = None
-        if userdata.task_number_in == 2:
-            if userdata.error_step_in in [1, 2, 3, 4]:
-                object_to_find = 'entryway'
-                # watering the plants
-        elif userdata.task_number_in == 0:
-            # error step in filling
-            if userdata.error_step_in == 1:
-                object_to_find = 'kitchen'
-
-        data = get_object_location(object_to_find)
-
-        if data is not None and len(data) != 0:
-            rospy.loginfo("Moving Robot to new base to locate person")
-            rospy.loginfo("Moving Robot to {} x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y, data[0].z, data[0].w))
-            goal = MoveBaseGoal()
-            goal.target_pose.header.frame_id = "map"
-            goal.target_pose.header.stamp = rospy.Time.now()
-            goal.target_pose.pose.position.x = data[0].x
-            goal.target_pose.pose.position.y = data[0].y
-            goal.target_pose.pose.orientation.z = data[0].z
-            goal.target_pose.pose.orientation.w = data[0].w
-
-            self.success = False
-            self.is_running = True
-            self.move_base.send_goal(goal, done_cb=self.done_cb)
-
-            start_time = rospy.Time.now()
-            timeout = rospy.Duration(secs=60, nsecs=0)
-            while self.is_running and rospy.Time.now() - start_time < timeout:
-                if self.preempt_requested():
-                    self.service_preempt()
-                    return 'preempted'
-                    self.rate.sleep()
-
-                if not self.success:
-                    self.move_base.cancel_goal()
-                    rospy.loginfo("GotoNewBase failed")
-                    return "fail"
-
-                rospy.loginfo("GotoNewBase succeeded")
-                return "success"
-            else:
-                rospy.loginfo("Cannot retreive the location of base")
-                return "fail"
-    '''
-        
 
 class FindPersonSMACH():
 

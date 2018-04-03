@@ -105,11 +105,12 @@ class SchedulerServer:
                 Status.INPROGRESS, "TURTLEBOT WITH HUMAN")
             rospy.loginfo("manager: Found human")
         else:
-            self.is_error_correction_done = True and self.use_robot
-            self.is_error_corrected = False
             self.do_error_feedback(
                 Status.FAILED, "TURTLEBOT FIND/GOTO HUMAN FAILED")
-            rospy.logerr("manager: Did not find human")
+            rospy.logwarn("manager: Did not find human")
+            self.do_error_feedback(
+                Status.FAILED, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
+            rospy.logwarn("manager: Experimenter needs to teleop robot to human")
 
         # Step TWO:
         # Human interacts with tablet human chooses no or task completed
@@ -121,9 +122,12 @@ class SchedulerServer:
         if self.is_error_corrected:
             complete_status = Status.COMPLETED
             self.do_error_feedback(Status.COMPLETED, "ERROR CORRECTION COMPLETED")
+            rospy.loginfo("manager: Error correction completed")
         else:
+            # SHOULD NEVER GET HERE!!!
             complete_status = Status.FAILED
             self.do_error_feedback(Status.FAILED, "ERROR CORRECTION FAILED")
+            rospy.logerr("manager: Error correction failed!")
 
         do_error_result = DoErrorResult()
         do_error_result.status = complete_status
