@@ -12,133 +12,10 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from find_person.msg import FindPersonAction, FindPersonGoal
 #from gotoxy_state import GotoXYState, get_object_location
-from gotoxy_state_seq import GotoXYState, get_object_location
+from gotoxy_state_seq import GotoXYState, get_object_location, multi_path
 from geometry_msgs.msg import Pose, Point, Quaternion
 import settings
 
-#Logic for figuring out which points to use
-def multi_path(origin, object_name):
-    names = []
-
-    #From base1
-    if (origin == "base1" and object_name == "base2"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-        names.append('base2')
-    elif (origin == "base1" and object_name == "base3"):
-        names.append('b1_b3_1')
-        names.append('base1')
-
-    #From base2
-    elif (origin == "base2" and object_name == "base1"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append('b2_b1_3')
-        names.append('base2')
-    elif (origin == "base2" and object_name == "base3"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append('b1_b3_1')
-        names.append('base2')
-
-    #From base3
-    elif (origin == "base3" and object_name == "base1"):
-        names.append('b2_b1_3')
-        names.append('base3')
-    elif (origin == "base3" and object_name == "base2"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b2_b1_3')
-        names.append('base3')
-
-    #stupid plant
-    elif ( (origin == "base1" or origin == "base3") and object_name == "plantside"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-        names.append('plantside')
-
-    #Objects
-    elif (origin == "base1" or origin == "base3"):
-        names.append('b1_b2_1')
-
-    #Objects
-    elif (origin == "base2"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-
-    points = []
-    for name in names:
-        result = get_object_location(name)
-        points.append((result[0].x,result[0].y,result[0].z,result[0].w))
-
-    return points
-
-#Logic for figuring out which points to use
-def multi_path2(origin, object_name):
-    names = []
-
-    #From base1
-    if (origin == "base1" and object_name == "base2"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-        names.append('base2')
-    elif (origin == "base1" and object_name == "base3"):
-        names.append('b1_b3_1')
-        names.append('base1')
-
-    #From base2
-    elif (origin == "base2" and object_name == "base1"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append('b2_b1_3')
-        names.append('base2')
-    elif (origin == "base2" and object_name == "base3"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append('b1_b3_1')
-        names.append('base2')
-
-    #From base3
-    elif (origin == "base3" and object_name == "base1"):
-        names.append('b2_b1_3')
-        names.append('base3')
-    elif (origin == "base3" and object_name == "base2"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b2_b1_3')
-        names.append('base3')
-
-    #stupid plant
-    elif ( (origin == "base1" or origin == "base3" or origin == "") and object_name == "plantside"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-        names.append('plantside')
-
-    #Objects
-    elif (origin == "base1" or origin == "base3"):
-        names.append('b1_b2_1')
-        names.append(object_name)
-
-    #Objects
-    elif (origin == "base2"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append(object_name)
-
-    #Rest
-    else:
-        names.append(object_name)
-
-    points = []
-    for name in names:
-        result = get_object_location(name)
-        points.append((result[0].x,result[0].y,result[0].z,result[0].w))
-
-    return points
 
 class FindPersonState(smach.State):
 
@@ -290,7 +167,7 @@ class GotoNewBaseState(smach.State):
 
         #data = get_object_location(object_to_find)
 
-        data = multi_path2(settings.last_object, object_to_find)
+        data = multi_path(settings.last_object, object_to_find)
         settings.last_object = object_to_find
 
         #multi-points

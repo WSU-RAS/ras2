@@ -11,6 +11,76 @@ from actionlib_msgs.msg import GoalStatus
 from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
 from geometry_msgs.msg import Pose, Point, Quaternion
 
+
+
+#Logic for figuring out which points to use
+def multi_path(origin, object_name):
+    names = []
+
+    #  base1 -> base2
+    if (origin == "base1" and object_name == "base2"):
+        names.append('b1_b2_1')
+        names.append('b1_b2_2')
+        names.append('b1_b2_3')
+
+    #  base1 -> base3
+    elif (origin == "base1" and object_name == "base3"):
+        names.append('b1_b3_1')
+
+    #  base2 -> base1
+    elif (origin == "base2" and object_name == "base1"):
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+        names.append('b2_b1_3')
+
+    #  base2 -> base3
+    elif (origin == "base2" and object_name == "base3"):
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+        names.append('b1_b3_1')
+
+    #  base3 -> base1
+    elif (origin == "base3" and object_name == "base1"):
+        names.append('b2_b1_3')
+
+    #  base3 -> base2
+    elif (origin == "base3" and object_name == "base2"):
+        names.append('b1_b2_1')
+        names.append('b1_b2_2')
+        names.append('b1_b2_3')
+
+    #stupid plant (plant on smaller table next to base2)
+    #Navigate around if it is not at base2 (since base2 is already there)
+    elif ( origin != "base2" and object_name == "plantside"):
+        names.append('b1_b2_1')
+        names.append('b1_b2_2')
+        names.append('b1_b2_3')
+
+    #navigate to universal point if not at base2
+    elif (origin != "base2"):
+        names.append('b1_b2_1')
+
+    #Objects
+    elif (origin == "base2"):
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+    
+    #If all else fails, send it to uni
+    else:
+        names.append('b1_b2_1')
+
+    #Append actual goal object to goal_names_list
+    names.append(object_name)
+
+    points = []
+    for name in names:
+        result = get_object_location(name)
+        points.append((result[0].x,result[0].y,result[0].z,result[0].w))
+
+    return points
+
+
+
 def get_object_location(name):
 
     rospy.wait_for_service("query_objects")
