@@ -324,7 +324,7 @@ class TabletData(object):
                 video_step_url = 'waterplants.error2.mp4'
                 object_to_find = 'plantcoffee'
             elif error_step == 3:
-                video_step_url = 'waterplants.error3.mp4'
+                video_step_url = 'waterplants.errors.mp4' # Name should be error3
                 object_to_find = "plantside"
 
         elif task_number == Task.TAKE_MEDS:
@@ -351,7 +351,7 @@ class TabletData(object):
                 video_step_url = 'walkdog.error3.mp4'
                 object_to_find = 'keys'
             elif error_step == 3:
-                video_step_url = 'walkdog.error4.mp4'
+                video_step_url = 'walkdog.error3.mp4' # TODO error4 video does not exist...
                 object_to_find = 'dog'
 
         return object_to_find, video_step_url, video_full_url
