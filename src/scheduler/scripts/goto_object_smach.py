@@ -51,25 +51,12 @@ class FindObjectState(smach.State):
             object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
 
         path_goals = multi_path(GotoObjectSMACH.last_object, object_to_find)
-        #Tracking last object
+        # Tracking last object
         GotoObjectSMACH.last_object = object_to_find
         userdata.points = path_goals
 
         return "success"
-        '''
-        data = get_object_location(object_to_find)
-        if data is not None and len(data) != 0:
-            userdata.position_x_out = data[0].x
-            userdata.position_y_out = data[0].y
-            userdata.orientation_z_out = data[0].z
-            userdata.orientation_w_out = data[0].w
-            rospy.loginfo("Object {} found at x = {} y = {} z = {} w = {}".format(object_to_find, data[0].x, data[0].y,
-                                                                                  data[0].z, data[0].w))
-            return "success"
-        else:
-            rospy.loginfo("Cannot retrieve {} location".format(object_to_find))
-            return "fail"
-        '''
+
 
 class GotoObjectSMACH():
     last_object = "base1"
@@ -86,7 +73,7 @@ class GotoObjectSMACH():
         sm.userdata.sm_orient_z = 0
         sm.userdata.sm_orient_w = 0
         sm.userdata.base = base
-        #chris' points
+        # Chris' points
         sm.userdata.sm_points = []
 
         with sm:
