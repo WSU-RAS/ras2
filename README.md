@@ -51,6 +51,10 @@ Edit */usr/share/polkit-1/actions/org.freedesktop.login1.policy*. Search for
 `systemctl poweroff` as a normal user, which is what the poweroff service will
 do.
 
+Or, maybe try adding with `sudo visudo`:
+
+    %sudo   ALL=(ALL) NOPASSWD: /sbin/poweroff
+
 ## Git Submodules
 Clone getting submodules:
 

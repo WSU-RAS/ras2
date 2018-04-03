@@ -16,11 +16,15 @@ class PoweroffService:
         # Name this node
         rospy.init_node('poweroff')
 
+        """
         if self.can_poweroff():
             # Listen to object locations that are published
             rospy.Service("/poweroff", Poweroff, self.callback)
         else:
             rospy.logerr("You do not have permission to poweroff! Thus /poweroff will not run.")
+        """
+
+        rospy.Service("/poweroff", Poweroff, self.callback)
 
     def can_poweroff(self):
         bus = dbus.SystemBus()
@@ -38,9 +42,15 @@ class PoweroffService:
 
     def callback(self, req):
         # too much work to have another dbus service on the Jetson right now...
-        os.system('ssh jetson "systemctl poweroff"')
+        # TODO later
+        #os.system('ssh jetson "sudo /bin/systemctl poweroff -i"')
+        os.system('ssh jetson "sudo /sin/poweroff"')
+
         time.sleep(2)
-        self.cmd_poweroff()
+
+        # Sometimes doesn't work, so just run command
+        #self.cmd_poweroff()
+        os.system('sudo /sbin/poweroff')
 
         return PoweroffResponse(True)
 
