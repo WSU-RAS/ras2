@@ -41,16 +41,12 @@ class PoweroffService:
         method(True)
 
     def callback(self, req):
-        # too much work to have another dbus service on the Jetson right now...
-        # TODO later
-        #os.system('ssh jetson "sudo /bin/systemctl poweroff -i"')
-        os.system('ssh jetson "sudo /sin/poweroff"')
-
+        os.system('ssh jetson "/sbin/poweroff"')
         time.sleep(2)
+        os.system('/sbin/poweroff')
 
-        # Sometimes doesn't work, so just run command
+        # Sometimes doesn't work, so just run command above
         #self.cmd_poweroff()
-        os.system('sudo /sbin/poweroff')
 
         return PoweroffResponse(True)
 

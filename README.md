@@ -43,17 +43,10 @@ To start or stop, use `systemctl`, e.g.:
 ## Allow powering off via the experimenter interface
 By default users don't have the privilege to power off without the admin
 password or using sudo. If we want the ROS service to power off via the
-experimenter interface, you can do this on both the Joule and Jetson:
+experimenter interface, you can do this on both the Joule and Jetson and then
+start the `poweroff.py` node:
 
-Edit */usr/share/polkit-1/actions/org.freedesktop.login1.policy*. Search for
-"org.freedesktop.login1.power-off" and set that action's *allow_any* and
-*allow_inactive* to "yes" rather than "auth\_admin\_keep". Then you can run
-`systemctl poweroff` as a normal user, which is what the poweroff service will
-do.
-
-Or, maybe try adding with `sudo visudo`:
-
-    %sudo   ALL=(ALL) NOPASSWD: /sbin/poweroff
+    sudo chmod a+s /sbin/poweroff
 
 ## Git Submodules
 Clone getting submodules:
