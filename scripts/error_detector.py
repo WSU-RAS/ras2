@@ -242,7 +242,7 @@ class ErrorDetector:
         for sensor in sensors:
             sensor_str = "{}\t{}\t{}".format(
                 str(sensor.stamp), str(sensor.target), str(sensor.message))
-            if self.print_casas_log:
+            if self.task_status.status == TaskStatus.ACTIVE:
                 rospy.loginfo(sensor_str)
             if self.task_status.status == TaskStatus.ACTIVE:
                 self.__add_sensor_to_sequence(sensor, new_seq)
