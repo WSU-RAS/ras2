@@ -14,8 +14,7 @@ from find_person.msg import FindPersonAction, FindPersonGoal
 #from gotoxy_state import GotoXYState, get_object_location
 from gotoxy_state_seq import GotoXYState, get_object_location, multi_path, Goto_points
 from geometry_msgs.msg import Pose, Point, Quaternion
-
-
+from adl.util import Task
 
 class FindPersonState(smach.State):
 
@@ -62,11 +61,10 @@ class FindPersonState(smach.State):
             rospy.logwarn("FindPerson failed")
             return "fail"
 
-
-        #Find intermediate points based on previous location
+        # Find intermediate points based on previous location
         points = multi_path(FindPersonSMACH.last_object, "")
 
-        #Result of querying find_person, add person coords to goal list
+        # Result of querying find_person, add person coords to goal list
         result = self.find_person.get_result()
         points.append((result.x, result.y, result.z, result.w))
 
@@ -103,22 +101,19 @@ class GotoNewBaseState(smach.State):
         rospy.loginfo("GotoNewBaseState has been initialized, Waiting for the move_base action server")       
 
 
-    #new func
     def active_cb(self):
         rospy.loginfo("Goal pose "+str(self.goal_cnt+1)+" is now being processed by the Action Server...")
 
-    #new func
     def feedback_cb(self, feedback):
-        #rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
         pass
 
     def done_cb(self, status, result):
         self.goal_cnt += 1
 
-        if status == 2:
+        if status == GoalStatus.PREEMPTED:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
 
-        elif status == 3:
+        elif status == GoalStatus.SUCCEEDED:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
             if self.goal_cnt < len(self.pose_seq):
                 self.movebase_client()
@@ -128,20 +123,19 @@ class GotoNewBaseState(smach.State):
                 rospy.signal_shutdown("Final goal pose reached!")
                 self.success = True
 
-        elif status == 4:
+        elif status == GoalStatus.ABORTED:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" was aborted by the Action Server")
             rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" aborted, shutting down!")
 
-        elif status == 5:
+        elif status == GoalStatus.REJECTED:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" has been rejected by the Action Server")
             rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" rejected, shutting down!")
 
-        elif status == 8:
+        elif status == GoalStatus.RECALLED:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
 
         self.is_running = False
 
-    #new func
     def movebase_client(self):
         rospy.loginfo("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
 
@@ -163,28 +157,27 @@ class GotoNewBaseState(smach.State):
 
         # walk dog task
         data = None
-        if userdata.task_number_in == 2:
+        if userdata.task_number_in == Task.WALK_DOG:
             if userdata.error_step_in in [1, 2, 3, 4]:
                 object_to_find = 'entryway'
         # watering the plants
-        elif userdata.task_number_in == 0:
+        elif userdata.task_number_in == Task.WATER_PLANTS:
             # error step in filling
             if userdata.error_step_in == 1:
                 object_to_find = 'kitchen'
 
-        #data = get_object_location(object_to_find)
         data = multi_path(settings.last_object, object_to_find)
         settings.last_object = object_to_find
 
         ''' -Chris_test
-        #multi-points
+        # multi-points
         self.pose_seq = list()
         self.goal_cnt = 0
 
         for point in data:
             self.pose_seq.append(Pose(Point(point[0],point[1],0), Quaternion(0,0,point[2],point[3])))
 
-        #run it
+        # run it
         self.success = False
         self.is_running = True
         self.movebase_client()
@@ -218,7 +211,7 @@ class FindPersonSMACH():
     #last_object = "base1"
 
     def __init__(self, last_object):
-        self.last_object = last_object
+        FindPersonSMACH.last_object = last_object
 
     def execute(self, task_number=2, error_step=3):
         # SMACH State Machine
@@ -294,7 +287,8 @@ class FindPersonSMACH():
                     'orientation_w_in' : 'sm_orient_w',
                     'points_in': 'sm_points'
                 })
-
+        sis = smach_ros.IntrospectionServer('FindPersonSMACH', sm, '/FindPersonSMACH')
+        sis.start()
         outcome =  sm.execute()
         return outcome
 
