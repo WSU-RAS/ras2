@@ -51,10 +51,12 @@ class FindObjectState(smach.State):
         else:
             object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
 
+        # TODO we don't even use these points but re-run this in the
+        # GotoXYState based on object_to_find?
         path_goals = multi_path(GotoObjectSMACH.last_object, object_to_find)
         # Tracking last object
         GotoObjectSMACH.last_object = object_to_find
-        userdata.points = path_goals
+        userdata.points_out = path_goals
         userdata.object_name_out = object_to_find
 
         return "success"
