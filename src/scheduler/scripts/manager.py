@@ -11,6 +11,7 @@ from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
 from tablet_interface.srv import Tablet
 
 from adl.util import Task, Goal, Status
+import tf
 from tf import TransformListener
 from tf.transformations import euler_from_quaternion
 from collections import namedtuple
@@ -63,6 +64,13 @@ class SchedulerServer:
             self.goto_client.wait_for_server()
             self.tf = TransformListener()
             self.robot_loc = rospy.Timer(rospy.Duration(60), self.robot_location_cb)
+
+            # Allow returning to base from the experimenter interface
+            self.goto_base = SimpleActionServer(
+                'goto_base', TabletAction, # Same as action, but ignore data in message
+                execute_cb=self.goto_base_execute,
+                auto_start=False)
+            self.goto_base.start()
 
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
@@ -231,7 +239,10 @@ class SchedulerServer:
         elif response == "goto":
             rospy.loginfo("manager: Sending turtlebot to find object")
             if self.use_robot:
-                success = self.tablet_goto_execute(Goal.OBJECT)
+                if response.object:
+                    success = self.tablet_goto_execute(Goal.OBJECT)
+                else:
+                    success = self.tablet_goto_execute(Goal.OBJECT)
             else:
                 # Fake getting to object successfully on the tablet
                 self.tablet_setup("options", navigateComplete=True)
@@ -240,7 +251,27 @@ class SchedulerServer:
         tablet_result.success = success
         self.tablet.set_succeeded(tablet_result)
 
-    def tablet_goto_execute(self, goal_type):
+    def goto_base_execute(self, goal):
+        """
+        Return to the base for the current task
+        """
+        rospy.loginfo("manager: Got goto base command")
+        success = False
+
+        # Go to object
+        if self.goto(Goal.BASE):
+            if self.goto_success:
+                success = True
+                rospy.loginfo("Back at base")
+                self.goto_base_feedback(Status.COMPLETED, "GOTO BASE SUCCESS")
+            else:
+                self.goto_base_feedback(Status.FAILED, "GOTO BASE FAILED")
+
+        result = TabletResult()
+        result.success = success
+        self.goto_base.set_succeeded(result)
+
+    def tablet_goto_execute(self, goal_type=Goal.OBJECT):
         """
         Execute goto object and base triggered by human-tablet interaction
         """
@@ -251,6 +282,7 @@ class SchedulerServer:
             if goal_type == Goal.OBJECT:
                 msg = "Found object"
                 err_msg = "Did not find object"
+
                 self.tablet_feedback(Status.STARTED, "SEND GOAL TO TURTLEBOT=>GO TO OBJECT")
                 self.do_error_feedback(Status.INPROGRESS, "SEND GOAL TO TURTLEBOT=>GO TO OBJECT")
 
@@ -267,11 +299,13 @@ class SchedulerServer:
 
             self.tablet_feedback(Status.INPROGRESS, "TURTLEBOT NAVIGATING")
             self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT NAVIGATING")
+
             while self.is_goto_active:
                 self.rate.sleep()
 
             if self.goto_success:
                 rospy.loginfo(msg)
+
                 self.tablet_feedback(Status.COMPLETED, "TURTLEBOT COMPLETED TASK")
                 self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT COMPLETED TASK")
 
@@ -286,6 +320,7 @@ class SchedulerServer:
                     self.tablet_setup("options", showObject=False)
 
         rospy.logerr(err_msg)
+
         self.tablet_feedback(Status.FAILED, "TURTLEBOT FAILED")
         self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT FAILED")
 
@@ -299,6 +334,15 @@ class SchedulerServer:
         tablet_feedback.status = status
         tablet_feedback.text = text
         self.tablet.publish_feedback(tablet_feedback)
+
+    def goto_base_feedback(self, status, text):
+        """
+        Sends feedback to the goto base action server
+        """
+        feedback = TabletFeedback()
+        feedback.status = status
+        feedback.text = text
+        self.goto_base.publish_feedback(feedback)
 
     def goto(self, goto_type):
         """
