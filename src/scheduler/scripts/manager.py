@@ -239,10 +239,7 @@ class SchedulerServer:
         elif response == "goto":
             rospy.loginfo("manager: Sending turtlebot to find object")
             if self.use_robot:
-                if response.object:
-                    success = self.tablet_goto_execute(Goal.OBJECT)
-                else:
-                    success = self.tablet_goto_execute(Goal.OBJECT)
+                success = self.tablet_goto_execute(Goal.OBJECT)
             else:
                 # Fake getting to object successfully on the tablet
                 self.tablet_setup("options", navigateComplete=True)
