@@ -13,7 +13,10 @@ from tablet_interface.srv import Tablet
 from adl.util import Task, Goal, Status
 from tf import TransformListener
 from tf.transformations import euler_from_quaternion
+from collections import namedtuple
 
+Transformation = namedtuple('Transformation', ['x', 'y', 'z'])
+Rotation = namedtuple('Rotation', ['roll', 'pitch', 'yaw'])
 
 class SchedulerServer:
 
@@ -59,7 +62,7 @@ class SchedulerServer:
                 'goto', GotoAction)
             self.goto_client.wait_for_server()
             self.tf = TransformListener()
-            self.robot_loc = rospy.Timer(rospy.Duration(5), self.robot_location)
+            self.robot_loc = rospy.Timer(rospy.Duration(60), self.robot_location_cb)
 
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
@@ -68,16 +71,31 @@ class SchedulerServer:
         if self.is_goto_active:
             self.goto_client.cancel_goal()
 
-    def robot_location(self, event):
-        try:
-            (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
-            x, y, z = trans
-            roll, pitch, yaw = euler_from_quaternion(rot)
+    def get_robot_location(self):
+        t, r = None, None
+        if self.use_robot:
+            try:
+                (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
+                t = Transformation(*trans)
+                euler = euler_from_quaternion(rot)
+                r = Rotation(*euler)
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rospy.warn("manager: Cannot find /map or /base_link")
+        return (t, r)
 
-            rospy.loginfo("Turtlebot XYZ=[{0:.3f},{1:.3f},{2:.3f}] RPY(rad)=[{3:.3f},{4:.3f},{5:.3f}]".format(
-                x, y, z, roll, pitch, yaw))
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            pass
+    def log_robot_location(self):
+        """
+        Logs location and angle(radians) of turtlebot in the map.
+        Use this to publish information to CASAS when available.
+        """
+        trans, rot = self.get_robot_location()
+        if trans != None and rot != None:
+            rospy.loginfo("Turtlebot xy=({0:.3f},{1:.3f}) radian={2:.3f} degrees={3:.3f}".format(
+                trans.x, trans.y, rot.yaw, (rot.yaw * 180./math.pi)))
+
+    def robot_location_cb(self, event):
+        if (not self.is_error_correction_done) or self.is_goto_active:
+            self.log_robot_location()
 
     def do_error_execute(self, goal):
         """
@@ -324,13 +342,17 @@ class SchedulerServer:
         self.is_goto_active = False
         rospy.loginfo("manager: terminal state: {}  result: ({}, {})".format(
             status, result.status, result.is_complete))
+        self.log_robot_location()
 
     def goto_active_cb(self):
         self.is_goto_active = True
+        rospy.loginfo("manager: goto is active")
+        self.log_robot_location()
 
     def goto_feedback_cb(self, feedback):
         rospy.loginfo("manager: goto feedback: status={}".format(
             feedback.text))
+        self.log_robot_location()
 
 
 class TabletData(object):
