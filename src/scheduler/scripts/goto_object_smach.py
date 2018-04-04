@@ -10,7 +10,7 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
-from adl.util import Task, TaskToDag
+from adl.util import TaskToDag
 #from gotoxy_state import GotoXYState, get_object_location
 from gotoxy_state_seq import GotoXYState, get_object_location, multi_path
 
@@ -23,7 +23,8 @@ class FindObjectState(smach.State):
             outcomes=['success', 'fail'],
             input_keys=['task_number_in', 'error_step_in', 'base_in'],
             output_keys=['position_x_out', 'position_y_out',
-                         'orientation_z_out', 'orientation_w_out', 'points_out']
+                         'orientation_z_out', 'orientation_w_out', 'points_out',
+                         'object_name_out']
         )
         self.rate = rospy.Rate(10)
 
@@ -54,6 +55,7 @@ class FindObjectState(smach.State):
         # Tracking last object
         GotoObjectSMACH.last_object = object_to_find
         userdata.points = path_goals
+        userdata.object_name_out = object_to_find
 
         return "success"
 
@@ -68,13 +70,10 @@ class GotoObjectSMACH():
         sm = smach.StateMachine(outcomes=['finish', 'error'])
         sm.userdata.task_number = task_number
         sm.userdata.error_step = error_step
-        sm.userdata.sm_pose_x = 0
-        sm.userdata.sm_pose_y = 0
-        sm.userdata.sm_orient_z = 0
-        sm.userdata.sm_orient_w = 0
         sm.userdata.base = base
-        # Chris' points
+        sm.userdata.sm_last_object = GotoObjectSMACH.last_object
         sm.userdata.sm_points = []
+        sm.userdata.sm_object_name = ""
 
         with sm:
             smach.StateMachine.add(
@@ -87,11 +86,9 @@ class GotoObjectSMACH():
                     'task_number_in': 'task_number',
                     'error_step_in': 'error_step',
                     'base_in': 'base',
-                    'position_x_out': 'sm_pose_x',
-                    'position_y_out': 'sm_pose_y',
-                    'orientation_z_out': 'sm_orient_z',
-                    'orientation_w_out': 'sm_orient_w',
-                    'points_out': 'sm_points'}
+                    'points_out': 'sm_points',
+                    'object_name_out' : 'sm_object_name'
+                    }
             )
 
             smach.StateMachine.add(
@@ -102,16 +99,20 @@ class GotoObjectSMACH():
                     'fail': 'error',
                     'preempted': 'error'},
                 remapping={
-                    'position_x_in': 'sm_pose_x',
-                    'position_y_in': 'sm_pose_y',
-                    'orientation_z_in': 'sm_orient_z',
-                    'orientation_w_in': 'sm_orient_w',
-                    'points_in': 'sm_points'}
+                    'last_object_in' : 'sm_last_object',
+                    'task_number_in' : 'task_number',
+                    'error_step_in' : 'error_step',
+                    'points_in': 'sm_points',
+                    'object_name_in' : 'sm_object_name',
+                    'last_object_out' : 'sm_last_object',
+                    'points_in': 'sm_points'
+                    }
             )
         sis = smach_ros.IntrospectionServer('GotoObjectSMACH', sm, '/GotoObjectSMACH')
         sis.start()
         
         outcome = sm.execute()
+        GotoObjectSMACH.last_object = sm.userdata.sm_last_object
         return outcome
 
 

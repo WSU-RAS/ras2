@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import math
 
 from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
@@ -10,6 +11,8 @@ from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
 from tablet_interface.srv import Tablet
 
 from adl.util import Task, Goal, Status
+from tf import TransformListener
+from tf.transformations import euler_from_quaternion
 
 
 class SchedulerServer:
@@ -55,6 +58,8 @@ class SchedulerServer:
             self.goto_client = SimpleActionClient(
                 'goto', GotoAction)
             self.goto_client.wait_for_server()
+            self.tf = TransformListener()
+            self.robot_loc = rospy.Timer(rospy.Duration(5), self.robot_location)
 
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
@@ -62,6 +67,17 @@ class SchedulerServer:
     def shutdown(self):
         if self.is_goto_active:
             self.goto_client.cancel_goal()
+
+    def robot_location(self, event):
+        try:
+            (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
+            x, y, z = trans
+            roll, pitch, yaw = euler_from_quaternion(rot)
+
+            rospy.loginfo("Turtlebot XYZ=[{0:.3f},{1:.3f},{2:.3f}] RPY(rad)=[{3:.3f},{4:.3f},{5:.3f}]".format(
+                x, y, z, roll, pitch, yaw))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            pass
 
     def do_error_execute(self, goal):
         """
@@ -143,7 +159,8 @@ class SchedulerServer:
         do_error_feedback.text = text
         self.do_error.publish_feedback(do_error_feedback)
 
-    def tablet_setup(self, screen, showObject=True, navigateComplete=False):
+    def tablet_setup(self, screen, showObject=True, navigateComplete=False,
+            gotoObjectComplete=False):
         """
         Command the tablet to switch to a particular screen
         """
@@ -218,11 +235,14 @@ class SchedulerServer:
                 err_msg = "Did not find object"
                 self.tablet_feedback(Status.STARTED, "SEND GOAL TO TURTLEBOT=>GO TO OBJECT")
                 self.do_error_feedback(Status.INPROGRESS, "SEND GOAL TO TURTLEBOT=>GO TO OBJECT")
+
             elif goal_type == Goal.BASE:
                 msg = "Back at base"
                 err_msg = "Did not get back at base"
                 self.tablet_feedback(Status.STARTED, "SEND GOAL TO TURTLEBOT=>GO TO BASE")
                 self.do_error_feedback(Status.INPROGRESS, "SEND GOAL TO TURTLEBOT=>GO TO BASE")
+
+                # Leave at default screen, don't show the options
 
             while not self.is_goto_active:
                 self.rate.sleep()
@@ -237,15 +257,19 @@ class SchedulerServer:
                 self.tablet_feedback(Status.COMPLETED, "TURTLEBOT COMPLETED TASK")
                 self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT COMPLETED TASK")
 
-                self.tablet_setup("options", navigateComplete=True) # Success, say "Here you go"
+                # After leading to object, play the "okay, here you go" sound
+                if goal_type == Goal.OBJECT:
+                    self.tablet_setup("options", navigateComplete=True)
+
                 return True
+            else:
+                # If failure, just output the options without the go to button
+                if goal_type == Goal.OBJECT:
+                    self.tablet_setup("options", showObject=False)
 
         rospy.logerr(err_msg)
         self.tablet_feedback(Status.FAILED, "TURTLEBOT FAILED")
         self.do_error_feedback(Status.INPROGRESS, "TURTLEBOT FAILED")
-
-        # Show options but without the go to object button
-        self.tablet_setup("options", showObject=False)
 
         return False
 
@@ -290,6 +314,9 @@ class SchedulerServer:
         elif terminal_state == GoalStatus.PREEMPTED:
             self.goto_success = False
             status = "PREMEPTED"
+        elif terminal_state == GoalStatus.ABORTED:
+            self.goto_success = False
+            status = "ABORTED"
         else:
             self.goto_success = False
             status = "UNKNOWN"

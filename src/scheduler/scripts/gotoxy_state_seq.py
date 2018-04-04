@@ -11,6 +11,8 @@ from actionlib_msgs.msg import GoalStatus
 from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
 from geometry_msgs.msg import Pose, Point, Quaternion
 
+from adl.util import Task
+
 class Goto_points():
 
 
@@ -32,15 +34,15 @@ class Goto_points():
 
 
     def movebase_client(self, args):
-    rospy.loginfo("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
+        rospy.loginfo("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
 
-    goal = MoveBaseGoal()
-    goal.target_pose.header.frame_id = "map"
-    goal.target_pose.header.stamp = rospy.Time.now()
-    goal.target_pose.pose = self.pose_seq[self.goal_cnt]
-    rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
-    rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
-    self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose = self.pose_seq[self.goal_cnt]
+        rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
+        rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
+        self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
 
 
     def active_cb(self, args):
@@ -66,16 +68,13 @@ class Goto_points():
                 return
             else:
                 rospy.loginfo("Final goal pose reached!")
-                rospy.signal_shutdown("Final goal pose reached!")
                 args[1] = True
 
         elif status == 4:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" was aborted by the Action Server")
-            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" aborted, shutting down!")
 
         elif status == 5:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" has been rejected by the Action Server")
-            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" rejected, shutting down!")
 
         elif status == 8:
             rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
@@ -146,7 +145,10 @@ def multi_path(origin, object_name):
     points = []
     for name in names:
         result = get_object_location(name)
-        points.append((result[0].x,result[0].y,result[0].z,result[0].w))
+        if result is not None:
+            points.append((result[0].x,result[0].y,result[0].z,result[0].w))
+        else:
+            rospy.logwarn("Object "+name+" not found in YAML file or database")
 
     return points
 
@@ -164,35 +166,56 @@ def get_object_location(name):
         rospy.logerr("Service call failed: %s" % e)
     return None
 
-
 class GotoXYState(smach.State):
-
     def __init__(self):
-        smach.State.__init__(
-            self,
-            outcomes=['success', 'fail', 'preempted'],
-            input_keys=['position_x_in', 'position_y_in', 'orientation_z_in', 'orientation_w_in', 'points_in'])
-
+        smach.State.__init__(self,
+            outcomes = ['success', 'fail', 'preempted'],
+            input_keys = ['task_number_in', 'error_step_in', 'object_name_in', 'last_object_in', 'points_in'],
+            output_keys = ['last_object_out']
+        )
         self.rate = rospy.Rate(10)
-        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
 
-        rospy.loginfo("Waiting for the move_base action server")
+        rospy.loginfo("GotoNewBaseState has been initialized, Waiting for the move_base action server")       
+
+        self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         self.move_base.wait_for_server(rospy.Duration(2))
 
-    #new func
+
+
     def active_cb(self):
         rospy.loginfo("Goal pose "+str(self.goal_cnt+1)+" is now being processed by the Action Server...")
 
-    #new func
     def feedback_cb(self, feedback):
-        #To print current pose at each feedback:
-        #rospy.loginfo("Feedback for goal "+str(self.goal_cnt)+": "+str(feedback))
-        #rospy.loginfo("Feedback for goal pose "+str(self.goal_cnt+1)+" received")
         pass
 
-    #new func
+    def done_cb(self, status, result):
+        self.goal_cnt += 1
+
+        if status == GoalStatus.PREEMPTED:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
+
+        elif status == GoalStatus.SUCCEEDED:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
+            if self.goal_cnt < len(self.pose_seq):
+                self.movebase_client()
+                return
+            else:
+                rospy.loginfo("Final goal pose reached!")
+                self.success = True
+
+        elif status == GoalStatus.ABORTED:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" was aborted by the Action Server")
+
+        elif status == GoalStatus.REJECTED:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" has been rejected by the Action Server")
+
+        elif status == GoalStatus.RECALLED:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
+
+        self.is_running = False
+
     def movebase_client(self):
-        rospy.logerr("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
+        rospy.loginfo("Goal cnt: {}, pose_seq: {}".format(self.goal_cnt, self.pose_seq))
 
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
@@ -202,61 +225,58 @@ class GotoXYState(smach.State):
         rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
         self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
 
-    #edited func
-    def done_cb(self, status, result):
-        self.goal_cnt += 1
-
-        if status != 3:
-            self.is_running = False
-
-        if status == 2:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
-
-        if status == 3:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
-            if self.goal_cnt < len(self.pose_seq):
-                next_goal = MoveBaseGoal()
-                next_goal.target_pose.header.frame_id = "map"
-                next_goal.target_pose.header.stamp = rospy.Time.now()
-                next_goal.target_pose.pose = self.pose_seq[self.goal_cnt]
-                rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
-                rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
-                self.move_base.send_goal(next_goal, self.done_cb, self.active_cb, self.feedback_cb)
-            else:
-                rospy.loginfo("Final goal pose reached!")
-                rospy.signal_shutdown("Final goal pose reached!")
-                self.success = True
-                return
-
-        if status == 4:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" was aborted by the Action Server")
-            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" aborted, shutting down!")
-            return
-
-        if status == 5:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" has been rejected by the Action Server")
-            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" rejected, shutting down!")
-            return
-
-        if status == 8:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
-
-
     def execute(self, userdata):
-        rospy.loginfo("Executing state GotoXY")
+        rospy.loginfo("Executing state Goto New Base: "+userdata.object_name_in)
 
-        #multi-points
+        # Human was not found, so go to a location we should be able to find them
+        if userdata.object_name_in == "human_notfound":
+            object_to_find = ""
+
+            # walk dog task
+            if userdata.task_number_in == Task.WALK_DOG:
+                if userdata.error_step_in in [1, 2, 3, 4]:
+                    object_to_find = 'entryway'
+            # watering the plants
+            elif userdata.task_number_in == Task.WATER_PLANTS:
+                # error step in filling
+                if userdata.error_step_in == 1:
+                    object_to_find = 'kitchen'
+            else:
+                rospy.loginfo("GotoXYNewBase doesn't know where to go: "+userdata.object_name_in)
+                return "fail"
+
+            points = multi_path(userdata.last_object_in, object_to_find)
+
+        # Human was found, so in FindPersonSMACH we would have found the points
+        # we should go to. Now navigate to those locations.
+        elif userdata.object_name_in == "human_found":
+            object_to_find = "human"
+            points = userdata.points_in
+
+        # If nothing to do with human, go to some other object name
+        else:
+            object_to_find = userdata.object_name_in
+            points = multi_path(userdata.last_object_in, object_to_find)
+
+        userdata.last_object_out = object_to_find
+
+        # multi-points
         self.pose_seq = list()
         self.goal_cnt = 0
 
-        for point in userdata.points_in:
+        for point in points:
             self.pose_seq.append(Pose(Point(point[0],point[1],0), Quaternion(0,0,point[2],point[3])))
-            #goal_cnt = goal_cnt + 1
 
-        #run it
+        # run it
         self.success = False
         self.is_running = True
         self.movebase_client()
+
+        ''' -Chris_test
+        #Chris_test replacement code
+        args = [self.is_running, self.success, data]
+        Goto_points(args)
+        ''' 
 
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=120, nsecs=0)
@@ -268,12 +288,12 @@ class GotoXYState(smach.State):
 
         if not self.success:
             self.move_base.cancel_goal()
-            rospy.loginfo("GotoXY failed")
+            rospy.loginfo("GotoXYNewBase failed: "+userdata.object_name_in)
             return "fail"
 
-        rospy.loginfo("GotoXY succeeded")
+        rospy.loginfo("GotoXYNewBase succeeded: "+userdata.object_name_in)
         return "success"
 
     def request_preempt(self):
         smach.State.request_preempt(self)
-        rospy.logwarn("GotoXYState Preempted")
+        rospy.logwarn("GotoXYNewBase Preempted!")
