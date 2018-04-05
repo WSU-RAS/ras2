@@ -21,3 +21,8 @@ class Task:
         TAKE_MEDS: "Taking medication with food task",
         WALK_DOG: "Bring dog for a walk task"
     }
+    target = {
+        WATER_PLANTS: "ROS_Water_Plants",
+        TAKE_MEDS: "ROS_Take_Medication",
+        WALK_DOG: "ROS_Walk_Dog"
+    }

@@ -5,6 +5,7 @@ import rospkg
 import datetime
 import logging
 import configparser
+import threading
 
 from collections import defaultdict
 from actionlib import SimpleActionClient
@@ -15,6 +16,7 @@ from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
 from adl.util import Task, Goal, Status
 from casas import objects, rabbitmq
+from casas.publish import PublishToCasas
 
 from ras_msgs.msg import DoErrorAction, DoErrorGoal
 from ras_msgs.msg import TaskStatus
@@ -48,6 +50,7 @@ class ErrorDetector:
         self.task_setup()
         self.ros_setup()
 
+        # CASAS Sensors
         config = configparser.ConfigParser()
         config.read(self.pkg_path + "/scripts/casas.cfg")
         default = config['DEFAULT']
@@ -62,8 +65,25 @@ class ErrorDetector:
             amqp_vhost=default['AmqpVHost'],
             amqp_ssl=default.getboolean('AmqpSSL'),
             translations=self.translate)
+        #self.rcon.set_on_connect_callback(self.casas_log_thread)
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
         self.casas_setup_exchange()
+
+        rospy.Timer(rospy.Duration(1), self.casas_logging, oneshot=True)
+
+    def casas_log_thread(self):
+        self.casas_thread = threading.Thread(target=self.casas_logging)
+        self.casas_thread.start()
+        self.casas_thread.join()
+
+    def casas_logging(self, event):
+        # CASAS Logging
+        self.casas = PublishToCasas(node=rospy.get_name())
+        try:
+            self.casas.connect()
+        finally:
+            rospy.signal_shutdown("Cannot connect to CASAS! Need to restart.")
+            self.casas.finish()
 
     def task_setup(self, task_num=-1, status=TaskStatus.PENDING, text="PENDING"):
         self.task_number = task_num
@@ -100,6 +120,14 @@ class ErrorDetector:
         self.error_index = len(self.task_sequence)
         rospy.loginfo("error_detector: Initiating error correction for {} at step {}".format(
             self.error_key, self.error_step))
+        self.casas.publish(
+            package_type='ROS',
+            sensor_type='ROS_Task_Step_Fix_Error',
+            serial='[Turtlebot MAC]',
+            target=Task.target[self.task_number],
+            message={'action':'START', 'error_step':str(self.error_step + 1)},
+            category='state'
+        )
 
         if self.save_task:
             time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -178,6 +206,14 @@ class ErrorDetector:
                     self.save_fp = open(
                         self.pkg_path + "/log/" + self.save_filename, mode='w')
                 rospy.loginfo("error_detector: {}=START".format(Task.types[self.task_number]))
+                self.casas.publish(
+                    package_type='ROS',
+                    sensor_type='ROS_Task',
+                    serial='[Turtlebot MAC]',
+                    target=Task.target[self.task_number],
+                    message='BEGIN',
+                    category='state'
+                )
                 return TaskControllerResponse(response)
 
             elif self.task_number == request.id.task_number \
@@ -188,6 +224,14 @@ class ErrorDetector:
                     self.save_fp = None
                 self.task_setup()
                 rospy.loginfo("error_detector: {}=END".format(Task.types[request.id.task_number]))
+                self.casas.publish(
+                    package_type='ROS',
+                    sensor_type='ROS_Task',
+                    serial='[Turtlebot MAC]',
+                    target=Task.target[request.id.task_number],
+                    message='END',
+                    category='state'
+                )
                 return TaskControllerResponse(response)
 
         rospy.logwarn("task request invalid")
@@ -273,6 +317,7 @@ class ErrorDetector:
     def stop(self):
         rospy.loginfo("error_detector: disconnecting casas connection")
         self.rcon.stop()
+        self.casas.finish()
 
 
 if __name__ == "__main__":
