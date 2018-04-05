@@ -103,7 +103,7 @@ class TestErrorDetector:
                     self.test_events[int(time_diff)].append((row[2], row[3]))
         rospy.loginfo("{} loaded successfully with total_events={}".format(file_name, len(self.test_events)))
         self.test_events_len = len(self.test_events)
-        
+
     def test_task_controller(self, request):
         response = TaskStatus(
             status=TaskStatus.SUCCESS,

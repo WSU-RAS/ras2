@@ -17,12 +17,7 @@ class Task:
     TAKE_MEDS = 1
     WALK_DOG = 2
     types = {
-        WATER_PLANTS: "Watering plants task",
-        TAKE_MEDS: "Taking medication with food task",
-        WALK_DOG: "Bring dog for a walk task"
-    }
-    target = {
-        WATER_PLANTS: "ROS_Water_Plants",
-        TAKE_MEDS: "ROS_Take_Medication",
-        WALK_DOG: "ROS_Walk_Dog"
+        WATER_PLANTS: "Water_Plants",
+        TAKE_MEDS: "Take_Medication",
+        WALK_DOG: "Walk_Dog"
     }

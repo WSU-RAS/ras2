@@ -116,14 +116,6 @@ class ErrorDetector:
         self.error_index = len(self.task_sequence)
         rospy.loginfo("error_detector: Initiating error correction for {} at step {}".format(
             self.error_key, self.error_step))
-        self.casas.publish(
-            package_type='ROS',
-            sensor_type='ROS_Task_Step_Fix_Error',
-            serial=self.mac_address,
-            target=Task.target[self.task_number],
-            message={'action':'START', 'error_step':str(self.error_step + 1)},
-            category='state'
-        )
 
         if self.save_task:
             time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -150,6 +142,17 @@ class ErrorDetector:
     def __error_correction_active_cb(self):
         self.task_pause = True
         self.task_status.text = "ERROR CORRECTION STARTED"
+        self.casas.publish(
+            package_type='ROS',
+            sensor_type='ROS_Task_Step_Error',
+            serial=self.mac_address,
+            target='ROS_Task_Step_Fix_Error',
+            message={
+                'action':'START',
+                'error_step':str(self.error_step+1),
+                'task':Task.types[self.task_number]},
+            category='state'
+        )
 
     def __error_correction_done_cb(self, terminal_state, result):
         result_bool = (result.status == Status.COMPLETED)
@@ -157,9 +160,31 @@ class ErrorDetector:
             self.task_status.text = "ERROR CORRECTION SUCCEEDED"
             rospy.loginfo("error_detector: do_error correction succeeded")
             self.__correct_sequence()
+            self.casas.publish(
+                package_type='ROS',
+                sensor_type='ROS_Task_Step_Error',
+                serial=self.mac_address,
+                target='ROS_Task_Step_Fix_Error',
+                message={
+                    'action':'SUCCEEDED',
+                    'error_step':str(self.error_step+1),
+                    'task':Task.types[self.task_number]},
+                category='state'
+            )
         else:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("error_detector: do_error correction failed")
+            self.casas.publish(
+                package_type='ROS',
+                sensor_type='ROS_Task_Step_Error',
+                serial=self.mac_address,
+                target='ROS_Task_Step_Fix_Error',
+                message={
+                    'action':'FAILED',
+                    'error_step':str(self.error_step+1),
+                    'task':Task.types[self.task_number]},
+                category='state'
+            )
 
         if self.save_task:
             time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -180,9 +205,20 @@ class ErrorDetector:
 
     def stop_error_correction(self):
         if self.do_error_connected:
-            if self.do_error.get_state() == GoalStatus.ACTIVE:
+            if self.task_pause and self.do_error.get_state() == GoalStatus.ACTIVE:
                 self.do_error.cancel_goal()
                 rospy.logwarn("error_detector: do_error correction cancelled")
+                self.casas.publish(
+                    package_type='ROS',
+                    sensor_type='ROS_Task_Step_Error',
+                    serial=self.mac_address,
+                    target='ROS_Task_Step_Fix_Error',
+                    message={
+                        'action':'CANCELLED',
+                        'error_step':str(self.error_step+1),
+                        'task':Task.types[self.task_number]},
+                    category='state'
+                )
 
     def task_controller(self, request):
         response = TaskStatus(
@@ -207,8 +243,8 @@ class ErrorDetector:
                     package_type='ROS',
                     sensor_type='ROS_Task',
                     serial=self.mac_address,
-                    target=Task.target[self.task_number],
-                    message='BEGIN',
+                    target='ROS_Task',
+                    message={'action':'BEGIN', 'task':Task.types[self.task_number]},
                     category='state'
                 )
                 return TaskControllerResponse(response)
@@ -226,8 +262,8 @@ class ErrorDetector:
                     package_type='ROS',
                     sensor_type='ROS_Task',
                     serial=self.mac_address,
-                    target=Task.target[request.id.task_number],
-                    message='END',
+                    target='ROS_Task',
+                    message={'action':'END', 'task':Task.types[request.id.task_number]},
                     category='state'
                 )
                 return TaskControllerResponse(response)
