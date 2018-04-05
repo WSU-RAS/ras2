@@ -65,17 +65,16 @@ class WaterPlantsDag(object):
         'Done': 6
     }
     subtask_info = {
-        # (description, query object, current dag, next dag if error)
-        #
         # Note: for now we'll just show the button "guide me to object" for objects to
         # be retreived since we aren't tracking them as they're moving.
-        0: ('Retrieve water can', 'watercan', 'W', get_can, 1),
-        1: ('Fill water can', None, 'S', fill_can, 2),
+        #   (description              , query object , code, current dag , next dag if error)
+        0: ('Retrieve water can'      , 'watercan'   , 'W' , get_can     , 1),
+        1: ('Fill water can'          , None         , 'S' , fill_can    , 2),
         2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plant2, 4),
-        3: ('Water side table plant', 'plantside', 'P3', water_plant3, 4),
-        4: ('Rinse water can', None, 'S', rinse_can, 5),
-        5: ('Return water can', None, 'W', return_can, 6),
-        6: ('Completed', None, None, None, 6)
+        3: ('Water side table plant'  , 'plantside'  , 'P3', water_plant3, 4),
+        4: ('Rinse water can'         , None         , 'S' , rinse_can   , 5),
+        5: ('Return water can'        , None         , 'W' , return_can  , 6),
+        6: ('Completed'               , None         , None, None        , 6)
     }
     num_tasks = 6
 
@@ -129,13 +128,13 @@ class WalkDogDag(object):
         'Done': 5
     }
     subtask_info = {
-        # (description, query object, current dag, next task if error)
-        0: ('Retrieve Umbrella', 'umbrella', 'U', get_umbrella, 2),
-        1: ('Retrieve Leash', 'leash', 'L', get_leash, 3),
-        2: ('Retrieve Keys', 'keys', 'K', get_keys, 4),
-        3: ('Leash Dog', 'dog', 'D', leash_dog, 4),
-        4: ('Exit', None, 'DR', exit_house, 5),
-        5: ('Completed', None, None, None, 5)
+        #   (description       , query object, code, current dag , next dag if error)
+        0: ('Retrieve Umbrella', 'umbrella'  , 'U' , get_umbrella, 2),
+        1: ('Retrieve Leash'   , 'leash'     , 'L' , get_leash   , 3),
+        2: ('Retrieve Keys'    , 'keys'      , 'K' , get_keys    , 4),
+        3: ('Leash Dog'        , 'dog'       , 'D' , leash_dog   , 4),
+        4: ('Exit'             , None        , 'DR', exit_house  , 5),
+        5: ('Completed'        , None        , None, None        , 5)
     }
     num_tasks = 5
 
@@ -151,6 +150,7 @@ class TakeMedicationDag(object):
         'next': 'Done'
     }
     rinse_cup = {
+        'CH': None,
         'M': None,
         'F': None,
         'C': None,
@@ -158,21 +158,13 @@ class TakeMedicationDag(object):
         'current': 'rinse_cup',
         'next': 'throw_garbage'
     }
-    return_med = {
-        'CH': None,
-        'F': None,
-        'C': None,
-        'M': rinse_cup,
-        'current': 'return_med',
-        'next': 'rinse_cup'
-    }
     stand_up = {
         'F': None,
         'M': None,
         'C': None,
-        'CH': return_med,
+        'CH': rinse_cup,
         'current': 'stand_up',
-        'next': 'return_med'
+        'next': 'rinse_cup'
     }
     drink_water = {
         'F': None,
@@ -241,28 +233,26 @@ class TakeMedicationDag(object):
         'take_med': 6,
         'drink_water': 7,
         'stand_up': 8,
-        'return_med': 9,
-        'rinse_cup': 10,
-        'throw_garbage': 11,
-        'Done': 12
+        'rinse_cup': 9,
+        'throw_garbage': 10,
+        'Done': 11
     }
     subtask_info = {
-        # (description, query object, current dag, next dag if error)
-        0: ('Retrieve food', 'food', 'F', get_food, 2),
-        1: ('Retrieve cup', 'glass', 'C', get_cup, 2),
-        2: ('Fill cup', None, 'S', fill_cup, 4),
-        3: ('Retrieve medication', 'pillbottle', 'M', get_med, 5),
-        4: ('Sit chair', None, 'CH', sit_chair, 6),
-        5: ('Eat food', None, 'F', eat_food, 7),
-        6: ('Take medication', None, 'M', take_med, 7),
-        7: ('Drink water', None, 'C', drink_water, 9),
-        8: ('Stand up', None, 'CH', stand_up, 10),
-        9: ('Return medication', 'pillbottle', 'M', return_med, 11),
-        10: ('Rinse cup', None, 'C', rinse_cup, 12),
-        11: ('Throw garbage', None, 'G', throw_garbage, 12),
-        12: ('Completed', None, None, None, 12)
+        #   (description          , query object, code, current dag  , next dag if error)
+        0:  ('Retrieve food'      , 'food'      , 'F' , get_food     , 2),
+        1:  ('Retrieve cup'       , 'glass'     , 'C' , get_cup      , 2),
+        2:  ('Fill cup'           , None        , 'S' , fill_cup     , 4),
+        3:  ('Retrieve medication', 'pillbottle', 'M' , get_med      , 5),
+        4:  ('Sit chair'          , None        , 'CH', sit_chair    , 6),
+        5:  ('Eat food'           , None        , 'F' , eat_food     , 7),
+        6:  ('Take medication'    , None        , 'M' , take_med     , 7),
+        7:  ('Drink water'        , None        , 'C' , drink_water  , 9),
+        8:  ('Stand up'           , None        , 'CH', stand_up     , 10),
+        9:  ('Rinse cup'          , None        , 'C' , rinse_cup    , 11),
+        10: ('Throw garbage'      , None        , 'G' , throw_garbage, 11),
+        11: ('Completed'          , None        , None, None         , 11)
     }
-    num_tasks = 12
+    num_tasks = 11
 
 
 if __name__ == '__main__':
