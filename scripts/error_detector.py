@@ -14,13 +14,13 @@ from adl.util import Items, TaskToDag
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
 from adl.util import Task, Goal, Status
+from adl.util import get_mac
 from casas import objects, rabbitmq
 from casas.publish import PublishToCasas
 
 from ras_msgs.msg import DoErrorAction, DoErrorGoal
 from ras_msgs.msg import TaskStatus
 from ras_msgs.srv import TaskController, TaskControllerResponse
-
 
 class ErrorDetector:
 
@@ -30,6 +30,8 @@ class ErrorDetector:
         rospack = rospkg.RosPack()
         self.pkg_path = rospack.get_path('adl_error_detection')
 
+        self.mac_address = get_mac()
+        rospy.logdebug("MAC: {}".format(self.mac_address))
         self.print_casas_log = True
         self.save_fp = None
         self.save_filename = None
@@ -71,7 +73,8 @@ class ErrorDetector:
 
     def casas_logging(self, event):
         # CASAS Logging
-        self.casas = PublishToCasas(node=rospy.get_name())
+        self.casas = PublishToCasas(
+            agent_num='2', node='ROS_Node_'+rospy.get_name()[1:])
         try:
             self.casas.connect()
         finally:
@@ -116,7 +119,7 @@ class ErrorDetector:
         self.casas.publish(
             package_type='ROS',
             sensor_type='ROS_Task_Step_Fix_Error',
-            serial='[Turtlebot MAC]',
+            serial=self.mac_address,
             target=Task.target[self.task_number],
             message={'action':'START', 'error_step':str(self.error_step + 1)},
             category='state'
@@ -177,8 +180,9 @@ class ErrorDetector:
 
     def stop_error_correction(self):
         if self.do_error_connected:
-            self.do_error.cancel_goal()
-            rospy.logwarn("error_detector: do_error correction cancelled")
+            if self.do_error.get_state() == GoalStatus.ACTIVE:
+                self.do_error.cancel_goal()
+                rospy.logwarn("error_detector: do_error correction cancelled")
 
     def task_controller(self, request):
         response = TaskStatus(
@@ -202,7 +206,7 @@ class ErrorDetector:
                 self.casas.publish(
                     package_type='ROS',
                     sensor_type='ROS_Task',
-                    serial='[Turtlebot MAC]',
+                    serial=self.mac_address,
                     target=Task.target[self.task_number],
                     message='BEGIN',
                     category='state'
@@ -216,11 +220,12 @@ class ErrorDetector:
                     self.save_fp.close()
                     self.save_fp = None
                 self.task_setup()
+                self.stop_error_correction()
                 rospy.loginfo("error_detector: {}=END".format(Task.types[request.id.task_number]))
                 self.casas.publish(
                     package_type='ROS',
                     sensor_type='ROS_Task',
-                    serial='[Turtlebot MAC]',
+                    serial=self.mac_address,
                     target=Task.target[request.id.task_number],
                     message='END',
                     category='state'
