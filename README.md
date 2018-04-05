@@ -21,7 +21,7 @@ roslaunch adl_error_detection detect_error.launch
 
 Launch error detector for testing
 ```
-roslaunch adl_error_detection detect_error.launch is_test:=true
+roslaunch adl_error_detection detect_error.launch is_test:=true save_task:=false
 ```
 
 ### Start/End Task ROS Service Call
