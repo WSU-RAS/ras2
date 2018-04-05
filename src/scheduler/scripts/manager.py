@@ -11,6 +11,9 @@ from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
 from tablet_interface.srv import Tablet
 
 from adl.util import Task, Goal, Status
+from adl.util import get_mac
+from casas.publish import PublishToCasas
+
 import tf
 from tf import TransformListener
 from tf.transformations import euler_from_quaternion
@@ -19,7 +22,7 @@ from collections import namedtuple
 Transformation = namedtuple('Transformation', ['x', 'y', 'z'])
 Rotation = namedtuple('Rotation', ['roll', 'pitch', 'yaw'])
 
-class SchedulerServer:
+class Scheduler:
 
     def __init__(self):
         self.rate = rospy.Rate(2)
@@ -31,6 +34,7 @@ class SchedulerServer:
         self.video_step_url = ""
         self.video_full_url = ""
 
+        self.mac_address = get_mac()
         self.is_goto_active = False
         self.goto_success = False
         self.goto_type = None
@@ -38,10 +42,12 @@ class SchedulerServer:
         self.is_error_corrected = False
         self.use_robot = True
         self.use_tablet = True
+        self.teleop_only = False
         if rospy.has_param("ras"):
             ras = rospy.get_param("ras")
             self.use_robot = ras['use_robot']
             self.use_tablet = ras['use_tablet']
+            self.teleop_only = ras['teleop_only']
 
         self.do_error = SimpleActionServer(
             'do_error', DoErrorAction,
@@ -75,13 +81,25 @@ class SchedulerServer:
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
 
+        rospy.Timer(rospy.Duration(1), self.casas_logging, oneshot=True)
+
+    def casas_logging(self, event):
+        # CASAS Logging
+        self.casas = PublishToCasas(
+            agent_num='1', node='ROS_Node_'+rospy.get_name()[1:])
+        try:
+            self.casas.connect()
+        finally:
+            rospy.signal_shutdown("Cannot connect to CASAS! Need to restart.")
+            self.casas.finish()
+
     def shutdown(self):
-        if self.is_goto_active:
+        if self.is_goto_active and self.use_robot:
             self.goto_client.cancel_goal()
 
     def get_robot_location(self):
         t, r = None, None
-        if self.use_robot:
+        if self.use_robot: # TODO: Should add or self.teleop_only
             try:
                 (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
                 t = Transformation(*trans)
@@ -98,8 +116,17 @@ class SchedulerServer:
         """
         trans, rot = self.get_robot_location()
         if trans != None and rot != None:
+            degrees = (rot.yaw * 180./math.pi)
             rospy.loginfo("Turtlebot xy=({0:.3f},{1:.3f}) radian={2:.3f} degrees={3:.3f}".format(
-                trans.x, trans.y, rot.yaw, (rot.yaw * 180./math.pi)))
+                trans.x, trans.y, rot.yaw, degrees))
+            self.casas.publish(
+                package_type='ROS',
+                sensor_type='ROS_XYR',
+                serial=self.mac_address,
+                target='ROS_XYR',
+                message={'x':str(trans.x), 'y':str(trans.y), 'rotation':str(degrees)},
+                category='state'
+            )
 
     def robot_location_cb(self, event):
         if (not self.is_error_correction_done) or self.is_goto_active:
@@ -128,31 +155,44 @@ class SchedulerServer:
             self.tablet_setup("choice")
         self.do_error_feedback(Status.INPROGRESS, "TABLET SETUP COMPLETED")
 
+        # Autonomous navigation to human
         if self.use_robot:
             self.goto(Goal.HUMAN)
-        self.do_error_feedback(Status.INPROGRESS, "SEND GOAL TO TURTLEBOT=>FIND/GOTO HUMAN")
+            self.do_error_feedback(Status.INPROGRESS, "SEND GOAL TO TURTLEBOT=>FIND/GOTO HUMAN")
 
-        # Do not proceed until goto has started
-        while not self.is_goto_active and self.use_robot:
-            self.rate.sleep()
+            # Do not proceed until goto has started
+            while not self.is_goto_active and self.use_robot:
+                self.rate.sleep()
 
-        self.do_error_feedback(
-            Status.INPROGRESS, "TURTLEBOT FIND/GOTO HUMAN STARTED")
-        while self.is_goto_active and self.use_robot:
-            self.rate.sleep()
-
-        # Success is determined in goto done callback
-        if self.goto_success and self.goto_type == Goal.HUMAN:
             self.do_error_feedback(
-                Status.INPROGRESS, "TURTLEBOT WITH HUMAN")
-            rospy.loginfo("manager: Found human")
+                Status.INPROGRESS, "TURTLEBOT FIND/GOTO HUMAN STARTED")
+            while self.is_goto_active and self.use_robot:
+                self.rate.sleep()
+
+            # Success is determined in goto done callback
+            if self.goto_success and self.goto_type == Goal.HUMAN:
+                self.do_error_feedback(
+                    Status.INPROGRESS, "TURTLEBOT WITH HUMAN")
+                rospy.loginfo("manager: Found human")
+            else:
+                self.do_error_feedback(
+                    Status.FAILED, "TURTLEBOT FIND/GOTO HUMAN FAILED")
+                rospy.logwarn("manager: Did not find human")
+                self.do_error_feedback(
+                    Status.FAILED, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
+                rospy.logwarn("manager: Experimenter needs to teleop robot to human")
+
+        # Teleop navigation to human
+        elif self.teleop_only:
+            self.do_error_feedback(
+                Status.INPROGRESS, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
+            rospy.loginfo("manager: Experimenter needs to teleop robot to human")
+
+        # Tablet only (no robot)
         else:
             self.do_error_feedback(
-                Status.FAILED, "TURTLEBOT FIND/GOTO HUMAN FAILED")
-            rospy.logwarn("manager: Did not find human")
-            self.do_error_feedback(
-                Status.FAILED, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
-            rospy.logwarn("manager: Experimenter needs to teleop robot to human")
+                Status.INPROGRESS, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
+            rospy.loginfo("manager: Robot would find and go to human at this time")
 
         # Step TWO:
         # Human interacts with tablet human chooses no or task completed
@@ -230,17 +270,28 @@ class SchedulerServer:
         if response == "no" or response == "complete":
             self.is_error_corrected = True
             self.is_error_correction_done = True
-            rospy.loginfo("manager: Sending turtlebot to base")
             if self.use_robot:
+                rospy.loginfo("manager: Sending turtlebot to base")
                 success = self.tablet_goto_execute(Goal.BASE)
+            elif self.teleop_only:
+                rospy.loginfo("manager: Experimenter needs to teleop robot to base")
+            else:
+                rospy.loginfo("manager: Robot would go back to base at this time")
+
         elif response == "videodone":
             # Return to the options screen
             self.tablet_setup("options")
+
         elif response == "goto":
-            rospy.loginfo("manager: Sending turtlebot to find object")
             if self.use_robot:
+                rospy.loginfo("manager: Sending turtlebot to find object")
                 success = self.tablet_goto_execute(Goal.OBJECT)
+            elif self.teleop_only:
+                rospy.loginfo("manager: Experimenter needs to teleop robot to object")
+                # Fake getting to object successfully on the tablet
+                self.tablet_setup("options", navigateComplete=True)
             else:
+                rospy.loginfo("manager: Robot would go to object at this time")
                 # Fake getting to object successfully on the tablet
                 self.tablet_setup("options", navigateComplete=True)
 
@@ -413,7 +464,8 @@ class TabletData(object):
             video_full_url = 'waterplants.all.mp4'
             if error_step in [0, 1, 4, 5]:
                 video_step_url = 'waterplants.error1.mp4'
-                object_to_find = 'watercan'
+                if error_step == 0:
+                    object_to_find = 'watercan'
             elif error_step == 2:
                 video_step_url = 'waterplants.error2.mp4'
                 object_to_find = 'plantcoffee'
@@ -423,15 +475,18 @@ class TabletData(object):
 
         elif task_number == Task.TAKE_MEDS:
             video_full_url = 'takemedication.all.mp4'
-            if error_step in [0, 5, 11]:
+            if error_step in [0, 5, 10]:
                 video_step_url = 'takemedication.error1.mp4'
-                object_to_find = 'food'
-            elif error_step in [1, 2, 7, 10]:
+                if error_step == 0:
+                    object_to_find = 'food'
+            elif error_step in [1, 2, 7, 9]:
                 video_step_url = 'takemedication.error2.mp4'
-                object_to_find = 'glass'
-            elif error_step in [3, 6, 9]:
+                if error_step == 1:
+                    object_to_find = 'glass'
+            elif error_step in [3, 6]:
                 video_step_url = 'takemedication.error3.mp4'
-                object_to_find = 'pillbottle'
+                if error_step == 3:
+                    object_to_find = 'pillbottle'
 
         elif task_number == Task.WALK_DOG:
             video_full_url = 'walkdog.all.mp4'
@@ -453,8 +508,8 @@ class TabletData(object):
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('scheduler_server')
-        server = SchedulerServer()
+        rospy.init_node('scheduler')
+        server = Scheduler()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

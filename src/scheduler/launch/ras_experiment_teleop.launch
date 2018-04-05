@@ -4,6 +4,7 @@
     <arg name="use_robot" default="false" /> <!-- use teleop rather than navigation, camera, etc. -->
     <arg name="use_tablet" default="true" />
     <arg name="use_error" default="true" />
+    <arg name="teleop_only" default="true" />
 
     <arg name="save_task" default="true" />
     <arg name="is_test" default="false" /> <!-- testing error detection -->
@@ -11,10 +12,11 @@
     <!-- Parameters -->
     <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
     <param name="ras/use_tablet" value="$(arg use_tablet)" type="bool" />
+    <param name="ras/teleop_only" value="$(arg teleop_only)" type="bool" />
 
     <!-- Manager -->
     <node name="manager" pkg="scheduler" type="manager.py" output="screen" />
-    
+
     <!-- Robot for teleop; then connect via keyboard teleop or via Android app -->
     <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch"/>
     <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch"/>
