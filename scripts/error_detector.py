@@ -5,7 +5,6 @@ import rospkg
 import datetime
 import logging
 import configparser
-import threading
 
 from collections import defaultdict
 from actionlib import SimpleActionClient
@@ -65,16 +64,10 @@ class ErrorDetector:
             amqp_vhost=default['AmqpVHost'],
             amqp_ssl=default.getboolean('AmqpSSL'),
             translations=self.translate)
-        #self.rcon.set_on_connect_callback(self.casas_log_thread)
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
         self.casas_setup_exchange()
 
         rospy.Timer(rospy.Duration(1), self.casas_logging, oneshot=True)
-
-    def casas_log_thread(self):
-        self.casas_thread = threading.Thread(target=self.casas_logging)
-        self.casas_thread.start()
-        self.casas_thread.join()
 
     def casas_logging(self, event):
         # CASAS Logging
