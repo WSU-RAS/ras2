@@ -252,6 +252,10 @@ class Scheduler:
         # Step TWO:
         # Human interacts with tablet human chooses no or task completed
         while not self.is_error_correction_done and self.use_tablet:
+            if self.do_error.is_preempt_requested():
+                rospy.loginfo("manager: preempting do_error")
+                self.do_error.set_preempted()
+                return
             self.rate.sleep()
 
         # It ONLY reaches here if Human chooses

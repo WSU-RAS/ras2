@@ -6,7 +6,7 @@
     <arg name="use_error" default="true" />
     <arg name="teleop_only" default="true" />
 
-    <arg name="save_task" default="true" />
+    <arg name="save_task" default="false" />
     <arg name="is_test" default="false" /> <!-- testing error detection -->
     <arg name="lab" default="false" /> <!-- uses lab map -->
 

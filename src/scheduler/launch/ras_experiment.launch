@@ -7,7 +7,7 @@
     <arg name="use_camera" default="true" />
     <arg name="teleop_only" default="false" />
 
-    <arg name="save_task" default="true" />
+    <arg name="save_task" default="false" />
     <arg name="is_test" default="false" /> <!-- testing error detection -->
     <arg name="new_map" default="false" />
     <arg name="gui" default="false" />
