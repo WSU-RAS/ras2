@@ -182,7 +182,7 @@ class ErrorDetector:
             )
             if self.test_error:
                 self.pause_dummy_data(False)
-        else:
+        elif terminal_state == GoalStatus.SUCCEEDED and result.status == Status.FAILED:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("error_detector: do_error correction failed")
             self.casas.publish(
@@ -196,6 +196,8 @@ class ErrorDetector:
                     'task':Task.types[self.task_number]},
                 category='state'
             )
+        else:
+            rospy.loginfo("error_detector: do_error preempted or cancelled")
 
         if self.save_task:
             time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -339,8 +341,8 @@ class ErrorDetector:
         for sensor in sensors:
             sensor_str = "{}\t{}\t{}".format(
                 str(sensor.stamp), str(sensor.target), str(sensor.message))
-            if self.task_status.status == TaskStatus.ACTIVE:
-                rospy.loginfo(sensor_str)
+            #if self.task_status.status == TaskStatus.ACTIVE:
+            rospy.loginfo(sensor_str)
             if self.task_status.status == TaskStatus.ACTIVE:
                 self.__add_sensor_to_sequence(sensor, new_seq)
             if self.save_task and self.save_fp is not None:

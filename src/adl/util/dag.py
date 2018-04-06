@@ -175,7 +175,7 @@ class TakeMedicationDag(object):
     }
     take_med = {
         'F': None,
-        'C': None,
+        #'C': None,
         'M': drink_water,
         'current': 'take_med',
         'next': 'drink_water'
