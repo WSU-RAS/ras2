@@ -16,7 +16,7 @@ from casas import objects, rabbitmq
 
 from ras_msgs.msg import TaskStatus, TaskId
 from ras_msgs.srv import TestTaskController, TestTaskControllerResponse
-from ras_msgs.srv import TaskController
+from ras_msgs.srv import TaskController, Pause, PauseResponse
 
 class TestErrorDetector:
 
@@ -26,6 +26,7 @@ class TestErrorDetector:
         rospack = rospkg.RosPack()
         self.pkg_path = rospack.get_path('adl_error_detection')
 
+        self.pause = False
         self.task_number = None
         self.task_status = TaskStatus(
             status=TaskStatus.PENDING,
@@ -59,6 +60,9 @@ class TestErrorDetector:
             'test_task_controller', TestTaskController,
             self.test_task_controller)
         rospy.loginfo("test_task_controller service running")
+        self.pause_service = rospy.Service(
+            'pause', Pause,
+            self.pause_dummy_publish)
 
     def start_task(self, task_number=None):
         try:
@@ -115,6 +119,7 @@ class TestErrorDetector:
                 self.load_test_events(request.file)
                 self.start_task(task_number=request.id.task_number)
                 self.task_number = request.id.task_number
+                self.pause = False
                 self.task_status.status = TaskStatus.ACTIVE
                 self.task_status.text = "ACTIVE"
                 rospy.loginfo("{}: START".format(Task.types[self.task_number]))
@@ -124,6 +129,7 @@ class TestErrorDetector:
                and self.task_status.status == TaskStatus.ACTIVE:
                 self.end_task(task_number=request.id.task_number)
                 self.task_number = None
+                self.pause = False
                 self.task_status.status = TaskStatus.PENDING
                 self.task_status.text = "PENDING"
                 rospy.loginfo("{}: END".format(Task.types[request.id.task_number]))
@@ -134,13 +140,22 @@ class TestErrorDetector:
         response.text = "FAILED"
         return TestTaskControllerResponse(response)
 
+    def pause_dummy_publish(self, request):
+        self.pause = request.pause
+        rospy.logwarn("Publish dummy pause: {}".format(self.pause))
+        return PauseResponse(True)
+
     def casas_publish_event(self):
+        if self.pause:
+            self.rcon.call_later(1, self.casas_publish_event)
+            return
         if self.task_status.status == TaskStatus.ACTIVE:
             if self.test_events_ctr == self.test_events_len:
                 self.end_task(task_number=self.task_number)
                 rospy.loginfo("No more events in file")
                 rospy.loginfo("{}: END".format(Task.types[self.task_number]))
                 self.task_number = None
+                self.pause = False
                 self.task_status.status = TaskStatus.PENDING
                 self.task_status.text = "PENDING"
                 self.rcon.call_later(1, self.casas_publish_event)

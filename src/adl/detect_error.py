@@ -8,6 +8,9 @@ def check_sequence(graph, seq=[], task_count=0, task_num=-1):
     if seq == []:
         return 0, False, graph['current'], False, graph['current']
 
+    if task_num > 0:
+        return _check_sequence(graph, seq, task_count, task_num-1, current=graph['current'])
+
     # Y intersection, pick a branch
     if 'Y' in graph:
         long_path = None
@@ -70,6 +73,12 @@ def _check_sequence(graph, seq=[], task_count=0, task_num=-1, current=None):
 if __name__ == '__main__':
 
     print(check_sequence(
+        WaterPlantsDag.water_plant2,
+        seq=['W','W','W'],
+        task_count=2,
+        task_num=WaterPlantsDag.num_tasks))
+
+    print(check_sequence(
         WaterPlantsDag.taskStart,
         seq=['W', 'S', 'P2', 'P3', 'S'],
         task_num=WaterPlantsDag.num_tasks))
@@ -82,7 +91,7 @@ if __name__ == '__main__':
         WalkDogDag.taskStart,
         seq=['U', 'U', 'U'],
         task_num=WalkDogDag.num_tasks))
-    
+
     print(check_sequence(
         WalkDogDag.taskStart,
         seq=['U', 'L', 'K', 'D', 'DR'],
@@ -97,4 +106,3 @@ if __name__ == '__main__':
              'F', 'M', 'C', 'F', 'F', 'S', 'C', 'C', 'F', 'M',
              'M', 'F', 'C', 'M', 'C', 'C', 'G', 'M', 'G', 'M'],
         task_num=TakeMedicationDag.num_tasks))
-

@@ -21,6 +21,7 @@ from casas.publish import PublishToCasas
 from ras_msgs.msg import DoErrorAction, DoErrorGoal
 from ras_msgs.msg import TaskStatus
 from ras_msgs.srv import TaskController, TaskControllerResponse
+from ras_msgs.srv import Pause
 
 class ErrorDetector:
 
@@ -31,7 +32,6 @@ class ErrorDetector:
         self.pkg_path = rospack.get_path('adl_error_detection')
 
         self.mac_address = get_mac()
-        rospy.logdebug("MAC: {}".format(self.mac_address))
         self.print_casas_log = True
         self.save_fp = None
         self.save_filename = None
@@ -42,10 +42,12 @@ class ErrorDetector:
 
         self.test = False
         self.save_task = True
+        self.test_error = False
         if rospy.has_param("adl"):
             adl = rospy.get_param("adl")
             self.test = adl['is_test']
             self.save_task = adl['save_task']
+            self.test_error = adl['test_error']
         self.task_status = TaskStatus()
 
         self.task_setup()
@@ -92,6 +94,7 @@ class ErrorDetector:
         self.error_key = None
         self.error_index = -1
         self.error_code = None
+        self.last_key = None
         if self.task_number >= 0:
             self.task_dag = TaskToDag.mapping[self.task_number].task_start
 
@@ -109,11 +112,21 @@ class ErrorDetector:
             rospy.logerr("error_detector: do_error client failed to connect")
             return
 
+    def pause_dummy_data(self, request):
+        rospy.wait_for_service('pause')
+        try:
+            pause = rospy.ServiceProxy('pause', Pause)
+            response = pause(request)
+            return response.success
+        except rospy.ServiceException, e:
+            rospy.logerr("Service call failed: {}".format(e))
+
     def start_error_correction(self, error_status):
         self.error_key = error_status[4]
         self.error_step = TaskToDag.mapping[self.task_number].subtask[self.error_key]
         self.error_code = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][2]
         self.error_index = len(self.task_sequence)
+        self.last_key = self.error_key
         rospy.loginfo("error_detector: Initiating error correction for {} at step {}".format(
             self.error_key, self.error_step))
 
@@ -121,10 +134,6 @@ class ErrorDetector:
             time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
             start_str = "{}\t{}\t{}\t{}".format(time_str, "ERROR", "START", self.error_key)
             self.save_fp.write("{}\n".format(start_str))
-
-        if self.test and not self.use_tablet:
-            self.task_pause = False
-            self.__correct_sequence()
 
         if self.do_error_connected:
             goal = DoErrorGoal()
@@ -149,7 +158,7 @@ class ErrorDetector:
             target='ROS_Task_Step_Fix_Error',
             message={
                 'action':'START',
-                'error_step':str(self.error_step+1),
+                'error_step':str(self.error_step),
                 'task':Task.types[self.task_number]},
             category='state'
         )
@@ -167,10 +176,12 @@ class ErrorDetector:
                 target='ROS_Task_Step_Fix_Error',
                 message={
                     'action':'SUCCEEDED',
-                    'error_step':str(self.error_step+1),
+                    'error_step':str(self.error_step),
                     'task':Task.types[self.task_number]},
                 category='state'
             )
+            if self.test_error:
+                self.pause_dummy_data(False)
         else:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("error_detector: do_error correction failed")
@@ -181,7 +192,7 @@ class ErrorDetector:
                 target='ROS_Task_Step_Fix_Error',
                 message={
                     'action':'FAILED',
-                    'error_step':str(self.error_step+1),
+                    'error_step':str(self.error_step),
                     'task':Task.types[self.task_number]},
                 category='state'
             )
@@ -195,6 +206,11 @@ class ErrorDetector:
         self.task_pause = False
 
     def __correct_sequence(self):
+        next_step = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
+        self.task_dag = TaskToDag.mapping[self.task_number].subtask_info[next_step][3]
+        self.task_sequence = []
+        self.task_sequence_full.append(self.error_code + '*')
+        """ OLD
         # Fix error by adding missing step in sequence
         self.task_sequence.insert(self.error_index, self.error_code)
         next_step = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
@@ -202,6 +218,7 @@ class ErrorDetector:
         if (next_step - self.error_step) == 1:
             self.task_sequence = self.task_sequence[:self.error_index + 1]
         self.error_key = None
+        """
 
     def stop_error_correction(self):
         if self.do_error_connected:
@@ -215,7 +232,7 @@ class ErrorDetector:
                     target='ROS_Task_Step_Fix_Error',
                     message={
                         'action':'CANCELLED',
-                        'error_step':str(self.error_step+1),
+                        'error_step':str(self.error_step),
                         'task':Task.types[self.task_number]},
                     category='state'
                 )
@@ -255,8 +272,8 @@ class ErrorDetector:
                 if self.save_task:
                     self.save_fp.close()
                     self.save_fp = None
-                self.task_setup()
                 self.stop_error_correction()
+                self.task_setup()
                 rospy.loginfo("error_detector: {}=END".format(Task.types[request.id.task_number]))
                 self.casas.publish(
                     package_type='ROS',
@@ -274,16 +291,17 @@ class ErrorDetector:
         return TaskControllerResponse(response)
 
     def casas_setup_exchange(self):
-        self.rcon.setup_subscribe_to_exchange(
-            exchange_name='all.events.testbed.casas',
-            exchange_type='topic',
-            routing_key='#',
-            exchange_durable=True,
-            casas_events=True,
-            callback_function=self.__casas_cb)
-        if self.test:
+        if self.test_error:
             self.rcon.setup_subscribe_to_exchange(
                 exchange_name='test.events.testbed.casas',
+                exchange_type='topic',
+                routing_key='#',
+                exchange_durable=True,
+                casas_events=True,
+                callback_function=self.__casas_cb)
+        else:
+            self.rcon.setup_subscribe_to_exchange(
+                exchange_name='all.events.testbed.casas',
                 exchange_type='topic',
                 routing_key='#',
                 exchange_durable=True,
@@ -331,10 +349,30 @@ class ErrorDetector:
             if len(new_seq) > 0:
                 check_result = self.__check_error(new_seq)
                 is_error_detected = not check_result[1] and not check_result[3]
+
+                # Error Detected
                 if is_error_detected:
                     if self.error_key is None:
                         self.task_sequence_full.append("*")
+                    self.task_pause = True
+                    if self.test_error:
+                        self.pause_dummy_data(True)
                     self.start_error_correction(check_result)
+
+                # No Error Detected
+                else:
+                    # Check if a new step is completed in the sequence
+                    if self.last_key != check_result[2] and check_result[1]:
+                        step = TaskToDag.mapping[self.task_number].subtask[check_result[2]]
+                        self.casas.publish(
+                            package_type='ROS',
+                            sensor_type='ROS_Task_Step',
+                            serial=self.mac_address,
+                            target='ROS_Task_Step',
+                            message={'task':Task.types[self.task_number], 'step':str(step)},
+                            category='state'
+                        )
+                    self.last_key = check_result[2]
 
                 # Concatenate new sensor readings into task sequence
                 self.task_sequence_full.extend(new_seq)
