@@ -43,6 +43,7 @@
         <include file="$(find adl_error_detection)/launch/detect_error.launch">
             <arg name="is_test" value="$(arg is_test)" />
             <arg name="save_task" value="$(arg save_task)" />
+            <arg name="test_error" value="$(arg test_error)" />
         </include>
 
         <group if="$(arg test_error)">

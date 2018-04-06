@@ -8,6 +8,7 @@ from actionlib import SimpleActionServer, SimpleActionClient
 from ras_msgs.msg import GotoAction, GotoGoal
 from ras_msgs.msg import DoErrorAction, DoErrorFeedback, DoErrorResult
 from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
+from geometry_msgs.msg import Twist
 from tablet_interface.srv import Tablet
 
 from adl.util import Task, Goal, Status
@@ -49,6 +50,11 @@ class Scheduler:
             self.use_tablet = ras['use_tablet']
             self.teleop_only = ras['teleop_only']
 
+        self.test_error = False
+        if rospy.has_param("adl"):
+            adl = rospy.get_param("adl")
+            self.test_error = adl['test_error']
+
         self.do_error = SimpleActionServer(
             'do_error', DoErrorAction,
             execute_cb=self.do_error_execute,
@@ -69,7 +75,7 @@ class Scheduler:
                 'goto', GotoAction)
             self.goto_client.wait_for_server()
             self.tf = TransformListener()
-            self.robot_loc = rospy.Timer(rospy.Duration(60), self.robot_location_cb)
+            rospy.Timer(rospy.Duration(1), self.robot_location_cb, oneshot=True)
 
             # Allow returning to base from the experimenter interface
             self.goto_base = SimpleActionServer(
@@ -77,6 +83,9 @@ class Scheduler:
                 execute_cb=self.goto_base_execute,
                 auto_start=False)
             self.goto_base.start()
+
+            self.is_robot_moving = False
+            rospy.Subscriber('/cmd_vel', Twist, self.robot_cmd_vel_cb)
 
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
@@ -96,6 +105,32 @@ class Scheduler:
     def shutdown(self):
         if self.is_goto_active and self.use_robot:
             self.goto_client.cancel_goal()
+
+    def robot_cmd_vel_cb(self, msg):
+        """
+        teleop and move_base publish to cmd_vel topic to move robot.
+        Change to non-zero value means robot is moving and zero means still.
+        """
+        if self.is_robot_moving and msg.linear.x == 0 and msg.angular.z == 0:
+            self.is_robot_moving = False
+            self.casas.publish(
+                package_type='ROS',
+                sensor_type='ROS_Moving',
+                serial=self.mac_address,
+                target='ROS_Moving',
+                message='STILL',
+                category='state'
+            )
+        elif not self.is_robot_moving and (msg.linear.x != 0 or msg.angular.z != 0):
+            self.is_robot_moving = True
+            self.casas.publish(
+                package_type='ROS',
+                sensor_type='ROS_Moving',
+                serial=self.mac_address,
+                target='ROS_Moving',
+                message='MOVING',
+                category='state'
+            )
 
     def get_robot_location(self):
         t, r = None, None
@@ -129,14 +164,29 @@ class Scheduler:
             )
 
     def robot_location_cb(self, event):
-        if (not self.is_error_correction_done) or self.is_goto_active:
-            self.log_robot_location()
+        r = rospy.Rate(2) # 2hz
+        while not rospy.is_shutdown():
+            if (not self.is_error_correction_done) or self.is_goto_active:
+                self.log_robot_location()
+            r.sleep()
 
     def do_error_execute(self, goal):
         """
         What to do when error detection calls this action server, when an error
         is detected
         """
+        if self.test_error:
+            # Simulate a do error execution when testing with dummy data
+            self.do_error_feedback(Status.STARTED, "ERROR CORRECTION STARTED")
+            rospy.sleep(5.)
+            self.do_error_feedback(Status.COMPLETED, "ERROR CORRECTION COMPLETED")
+            rospy.sleep(1.)
+            do_error_result = DoErrorResult()
+            do_error_result.status = Status.COMPLETED
+            do_error_result.is_complete = True
+            self.do_error.set_succeeded(do_error_result)
+            return
+
         self.is_error_correction_done = False
         self.is_error_corrected = False
         rospy.loginfo("manager: Executing Do Error")
@@ -144,6 +194,7 @@ class Scheduler:
 
         self.task_number = goal.task_number
         self.error_step = goal.error_step
+
 
         # Preprocess to get correct values for the tablet
         self.object_name, self.video_step_url, self.video_full_url = \
@@ -267,6 +318,16 @@ class Scheduler:
         rospy.loginfo("manager: Got message from tablet: {}".format(response))
         self.do_error_feedback(Status.INPROGRESS, "TABLET MESSAGE {}".format(response))
 
+        if response in ['yes', 'no', 'complete', 'goto', 'watchstep', 'watchfull']:
+            self.casas.publish(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Button',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Button',
+                message={'action':'PRESSED', 'id':response},
+                category='entity'
+            )
+
         if response == "no" or response == "complete":
             self.is_error_corrected = True
             self.is_error_correction_done = True
@@ -278,7 +339,38 @@ class Scheduler:
             else:
                 rospy.loginfo("manager: Robot would go back to base at this time")
 
+        elif response == 'watchstep':
+            self.casas.publish(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'BEGIN', 'id':response, 'video':self.video_step_url},
+                category='state'
+            )
+            self.watch_video_url = self.video_step_url
+
+        elif response == 'watchfull':
+            self.casas.publish(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'BEGIN', 'id':response, 'video':self.video_full_url},
+                category='state'
+            )
+            self.watch_video_url = self.video_full_url
+
         elif response == "videodone":
+            self.casas.publish(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'END', 'id':response, 'video':self.watch_video_url},
+                category='state'
+            )
+            self.watch_video_url = ""
             # Return to the options screen
             self.tablet_setup("options")
 
@@ -462,45 +554,34 @@ class TabletData(object):
 
         if task_number == Task.WATER_PLANTS:
             video_full_url = 'waterplants.all.mp4'
-            if error_step in [0, 1, 4, 5]:
-                video_step_url = 'waterplants.error1.mp4'
-                if error_step == 0:
-                    object_to_find = 'watercan'
+            video_step_url = 'waterplants.error{}.mp4'.format(error_step)
+            if error_step == 0:
+                object_to_find = 'watercan'
             elif error_step == 2:
-                video_step_url = 'waterplants.error2.mp4'
                 object_to_find = 'plantcoffee'
             elif error_step == 3:
-                video_step_url = 'waterplants.errors.mp4' # Name should be error3
                 object_to_find = "plantside"
 
         elif task_number == Task.TAKE_MEDS:
             video_full_url = 'takemedication.all.mp4'
-            if error_step in [0, 5, 10]:
-                video_step_url = 'takemedication.error1.mp4'
-                if error_step == 0:
-                    object_to_find = 'food'
-            elif error_step in [1, 2, 7, 9]:
-                video_step_url = 'takemedication.error2.mp4'
-                if error_step == 1:
-                    object_to_find = 'glass'
-            elif error_step in [3, 6]:
-                video_step_url = 'takemedication.error3.mp4'
-                if error_step == 3:
-                    object_to_find = 'pillbottle'
+            video_step_url = 'takemedication.error{}.mp4'.format(error_step)
+            if error_step == 0:
+                object_to_find = 'food'
+            elif error_step == 1:
+                object_to_find = 'glass'
+            elif error_step == 3:
+                object_to_find = 'pillbottle'
 
         elif task_number == Task.WALK_DOG:
             video_full_url = 'walkdog.all.mp4'
+            video_step_url = 'walkdog.error{}.mp4'.format(error_step)
             if error_step == 0:
-                video_step_url = 'walkdog.error1.mp4'
                 object_to_find = 'umbrella'
             elif error_step == 1:
-                video_step_url = 'walkdog.error2.mp4'
                 object_to_find = 'leash'
             elif error_step == 2:
-                video_step_url = 'walkdog.error3.mp4'
                 object_to_find = 'keys'
             elif error_step == 3:
-                video_step_url = 'walkdog.error3.mp4' # TODO error4 video does not exist...
                 object_to_find = 'dog'
 
         return object_to_find, video_step_url, video_full_url
