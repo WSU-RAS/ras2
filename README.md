@@ -67,6 +67,12 @@ def end_task(task_number):
         rospy.logerr("Service call failed: %s"%e)
 ```
 
+### View logs sent to CASAS
+Run this launch file to view the logs sent to CASAS.
+```
+roslaunch adl_error_detection casas_log_observer.launch
+```
+
 ### Load CASAS with Dummy data from File
 Run the node below that would wait for rosservice call where you can specify the task number and dummy data file to load. This data will be read and published to CASAS. Once a service call is sent, it will also sent a rosservice call to `task_controller` to start error detection..
 ```
