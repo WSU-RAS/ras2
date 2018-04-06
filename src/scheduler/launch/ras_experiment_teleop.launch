@@ -6,8 +6,9 @@
     <arg name="use_error" default="true" />
     <arg name="teleop_only" default="true" />
 
-    <arg name="save_task" default="true" />
+    <arg name="save_task" default="false" />
     <arg name="is_test" default="false" /> <!-- testing error detection -->
+    <arg name="lab" default="false" /> <!-- uses lab map -->
 
     <!-- Parameters -->
     <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
@@ -18,12 +19,32 @@
     <node name="manager" pkg="scheduler" type="manager.py" output="screen" />
 
     <!-- Robot for teleop; then connect via keyboard teleop or via Android app -->
+    <!--
     <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch"/>
     <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch"/>
+    -->
 
     <!-- Tablet -->
     <group if="$(arg use_tablet)">
         <include file="$(find tablet_interface)/launch/web.launch" />
+    </group>
+    
+    <!-- Not for navigating, only for determining where we are in the map for CASAS logging
+    
+         lab true: load casas.pbstream
+         lab false: load kyoto.pbstream
+         -->
+    <group if="$(eval lab == true)">
+        <!-- Navigation -->
+        <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+            <arg name="map_name" value="casas.pbstream" />
+        </include>
+    </group>
+    <group if="$(eval lab == false)">
+        <!-- Navigation -->
+        <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+            <arg name="map_name" value="kyoto.pbstream" />
+        </include>
     </group>
 
     <!-- Allow powering off from experimenter interface -->

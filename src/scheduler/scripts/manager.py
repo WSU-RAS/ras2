@@ -34,6 +34,7 @@ class Scheduler:
         self.object_name = ""
         self.video_step_url = ""
         self.video_full_url = ""
+        self.watch_video_url = ""
 
         self.mac_address = get_mac()
         self.is_goto_active = False
@@ -44,6 +45,7 @@ class Scheduler:
         self.use_robot = True
         self.use_tablet = True
         self.teleop_only = False
+        self.is_robot_moving = False
         if rospy.has_param("ras"):
             ras = rospy.get_param("ras")
             self.use_robot = ras['use_robot']
@@ -74,8 +76,6 @@ class Scheduler:
             self.goto_client = SimpleActionClient(
                 'goto', GotoAction)
             self.goto_client.wait_for_server()
-            self.tf = TransformListener()
-            rospy.Timer(rospy.Duration(1), self.robot_location_cb, oneshot=True)
 
             # Allow returning to base from the experimenter interface
             self.goto_base = SimpleActionServer(
@@ -85,12 +85,16 @@ class Scheduler:
             self.goto_base.start()
 
             self.is_robot_moving = False
-            rospy.Subscriber('/cmd_vel', Twist, self.robot_cmd_vel_cb)
 
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
 
         rospy.Timer(rospy.Duration(1), self.casas_logging, oneshot=True)
+
+        if self.use_robot or self.teleop_only:
+            rospy.Subscriber('/cmd_vel', Twist, self.robot_cmd_vel_cb)
+            self.tf = TransformListener()
+            rospy.Timer(rospy.Duration(2), self.robot_location_cb, oneshot=True)
 
     def casas_logging(self, event):
         # CASAS Logging
@@ -134,7 +138,7 @@ class Scheduler:
 
     def get_robot_location(self):
         t, r = None, None
-        if self.use_robot: # TODO: Should add or self.teleop_only
+        if self.use_robot or self.teleop_only:
             try:
                 (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
                 t = Transformation(*trans)
@@ -152,8 +156,8 @@ class Scheduler:
         trans, rot = self.get_robot_location()
         if trans != None and rot != None:
             degrees = (rot.yaw * 180./math.pi)
-            rospy.loginfo("Turtlebot xy=({0:.3f},{1:.3f}) radian={2:.3f} degrees={3:.3f}".format(
-                trans.x, trans.y, rot.yaw, degrees))
+            #rospy.loginfo("Turtlebot xy=({0:.3f},{1:.3f}) radian={2:.3f} degrees={3:.3f}".format(
+            #    trans.x, trans.y, rot.yaw, degrees))
             self.casas.publish(
                 package_type='ROS',
                 sensor_type='ROS_XYR',
@@ -164,7 +168,7 @@ class Scheduler:
             )
 
     def robot_location_cb(self, event):
-        r = rospy.Rate(2) # 2hz
+        r = rospy.Rate(1) # 1hz
         while not rospy.is_shutdown():
             if (not self.is_error_correction_done) or self.is_goto_active:
                 self.log_robot_location()
@@ -248,6 +252,10 @@ class Scheduler:
         # Step TWO:
         # Human interacts with tablet human chooses no or task completed
         while not self.is_error_correction_done and self.use_tablet:
+            if self.do_error.is_preempt_requested():
+                rospy.loginfo("manager: preempting do_error")
+                self.do_error.set_preempted()
+                return
             self.rate.sleep()
 
         # It ONLY reaches here if Human chooses
