@@ -134,7 +134,7 @@ class Scheduler:
 
     def get_robot_location(self):
         t, r = None, None
-        if self.use_robot: # TODO: Should add or self.teleop_only
+        if self.use_robot or self.teleop_only:
             try:
                 (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
                 t = Transformation(*trans)
