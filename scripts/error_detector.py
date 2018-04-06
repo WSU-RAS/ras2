@@ -206,14 +206,15 @@ class ErrorDetector:
         self.task_pause = False
 
     def __correct_sequence(self):
-        next_step = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
-        self.task_dag = TaskToDag.mapping[self.task_number].subtask_info[next_step][3]
+        self.task_dag = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
         self.task_sequence = []
         self.task_sequence_full.append(self.error_code + '*')
         """ OLD
         # Fix error by adding missing step in sequence
         self.task_sequence.insert(self.error_index, self.error_code)
-        next_step = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
+        next_dag = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
+        current = next_dag['current']
+        next_step = TaskToDag.mapping[self.task_number].subtask[current]
         # Redo next step when next step is dependent to error step
         if (next_step - self.error_step) == 1:
             self.task_sequence = self.task_sequence[:self.error_index + 1]
@@ -363,15 +364,16 @@ class ErrorDetector:
                 else:
                     # Check if a new step is completed in the sequence
                     if self.last_key != check_result[2] and check_result[1]:
-                        step = TaskToDag.mapping[self.task_number].subtask[check_result[2]]
+                        self.current_step = TaskToDag.mapping[self.task_number].subtask[check_result[2]]
                         self.casas.publish(
                             package_type='ROS',
                             sensor_type='ROS_Task_Step',
                             serial=self.mac_address,
                             target='ROS_Task_Step',
-                            message={'task':Task.types[self.task_number], 'step':str(step)},
+                            message={'task':Task.types[self.task_number], 'step':str(self.current_step)},
                             category='state'
                         )
+                        rospy.loginfo('Task={} at step={}'.format(Task.types[self.task_number], self.current_step))
                     self.last_key = check_result[2]
 
                 # Concatenate new sensor readings into task sequence

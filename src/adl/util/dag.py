@@ -68,13 +68,13 @@ class WaterPlantsDag(object):
         # Note: for now we'll just show the button "guide me to object" for objects to
         # be retreived since we aren't tracking them as they're moving.
         #   (description              , query object , code, current dag , next dag if error)
-        0: ('Retrieve water can'      , 'watercan'   , 'W' , get_can     , 1),
-        1: ('Fill water can'          , None         , 'S' , fill_can    , 2),
-        2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plant2, 4),
-        3: ('Water side table plant'  , 'plantside'  , 'P3', water_plant3, 4),
-        4: ('Rinse water can'         , None         , 'S' , rinse_can   , 5),
-        5: ('Return water can'        , None         , 'W' , return_can  , 6),
-        6: ('Completed'               , None         , None, None        , 6)
+        0: ('Retrieve water can'      , 'watercan'   , 'W' , get_can     , fill_can),
+        1: ('Fill water can'          , None         , 'S' , fill_can    , water_plant2),
+        2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plant2, rinse_can),
+        3: ('Water side table plant'  , 'plantside'  , 'P3', water_plant3, rinse_can),
+        4: ('Rinse water can'         , None         , 'S' , rinse_can   , return_can),
+        5: ('Return water can'        , None         , 'W' , return_can  , None),
+        6: ('Completed'               , None         , None, None        , None)
     }
     num_tasks = 6
 
@@ -129,12 +129,12 @@ class WalkDogDag(object):
     }
     subtask_info = {
         #   (description       , query object, code, current dag , next dag if error)
-        0: ('Retrieve Umbrella', 'umbrella'  , 'U' , get_umbrella, 2),
-        1: ('Retrieve Leash'   , 'leash'     , 'L' , get_leash   , 3),
-        2: ('Retrieve Keys'    , 'keys'      , 'K' , get_keys    , 4),
-        3: ('Leash Dog'        , 'dog'       , 'D' , leash_dog   , 4),
-        4: ('Exit'             , None        , 'DR', exit_house  , 5),
-        5: ('Completed'        , None        , None, None        , 5)
+        0: ('Retrieve Umbrella', 'umbrella'  , 'U' , get_umbrella, get_keys),
+        1: ('Retrieve Leash'   , 'leash'     , 'L' , get_leash   , leash_dog),
+        2: ('Retrieve Keys'    , 'keys'      , 'K' , get_keys    , exit_house),
+        3: ('Leash Dog'        , 'dog'       , 'D' , leash_dog   , exit_house),
+        4: ('Exit'             , None        , 'DR', exit_house  , None),
+        5: ('Completed'        , None        , None, None        , None)
     }
     num_tasks = 5
 
@@ -239,18 +239,18 @@ class TakeMedicationDag(object):
     }
     subtask_info = {
         #   (description          , query object, code, current dag  , next dag if error)
-        0:  ('Retrieve food'      , 'food'      , 'F' , get_food     , 2),
-        1:  ('Retrieve cup'       , 'glass'     , 'C' , get_cup      , 2),
-        2:  ('Fill cup'           , None        , 'S' , fill_cup     , 4),
-        3:  ('Retrieve medication', 'pillbottle', 'M' , get_med      , 5),
-        4:  ('Sit chair'          , None        , 'CH', sit_chair    , 6),
-        5:  ('Eat food'           , None        , 'F' , eat_food     , 7),
-        6:  ('Take medication'    , None        , 'M' , take_med     , 7),
-        7:  ('Drink water'        , None        , 'C' , drink_water  , 9),
-        8:  ('Stand up'           , None        , 'CH', stand_up     , 10),
-        9:  ('Rinse cup'          , None        , 'C' , rinse_cup    , 11),
-        10: ('Throw garbage'      , None        , 'G' , throw_garbage, 11),
-        11: ('Completed'          , None        , None, None         , 11)
+        0:  ('Retrieve food'      , 'food'      , 'F' , get_food     , fill_cup),
+        1:  ('Retrieve cup'       , 'glass'     , 'C' , get_cup      , fill_cup),
+        2:  ('Fill cup'           , None        , 'S' , fill_cup     , sit_chair),
+        3:  ('Retrieve medication', 'pillbottle', 'M' , get_med      , eat_food),
+        4:  ('Sit chair'          , None        , 'CH', sit_chair    , take_med),
+        5:  ('Eat food'           , None        , 'F' , eat_food     , drink_water),
+        6:  ('Take medication'    , None        , 'M' , take_med     , drink_water),
+        7:  ('Drink water'        , None        , 'C' , drink_water  , rinse_cup),
+        8:  ('Stand up'           , None        , 'CH', stand_up     , throw_garbage),
+        9:  ('Rinse cup'          , None        , 'C' , rinse_cup    , None),
+        10: ('Throw garbage'      , None        , 'G' , throw_garbage, None),
+        11: ('Completed'          , None        , None, None         , None)
     }
     num_tasks = 11
 
