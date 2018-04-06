@@ -156,21 +156,23 @@ class Scheduler:
         trans, rot = self.get_robot_location()
         if trans != None and rot != None:
             degrees = (rot.yaw * 180./math.pi)
-            #rospy.loginfo("Turtlebot xy=({0:.3f},{1:.3f}) radian={2:.3f} degrees={3:.3f}".format(
-            #    trans.x, trans.y, rot.yaw, degrees))
             self.casas.publish(
                 package_type='ROS',
                 sensor_type='ROS_XYR',
                 serial=self.mac_address,
                 target='ROS_XYR',
-                message={'x':str(trans.x), 'y':str(trans.y), 'rotation':str(degrees)},
+                message={
+                    'x':'{0:.3f}'.format(trans.x),
+                    'y':'{0:.3f}'.format(trans.y),
+                    'rotation':'{0:.3f}'.format(degrees)},
                 category='state'
             )
 
     def robot_location_cb(self, event):
         r = rospy.Rate(1) # 1hz
         while not rospy.is_shutdown():
-            if (not self.is_error_correction_done) or self.is_goto_active:
+            # if ((not self.is_error_correction_done) or self.is_goto_active):
+            if self.is_robot_moving:
                 self.log_robot_location()
             r.sleep()
 
