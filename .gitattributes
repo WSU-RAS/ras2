@@ -4,6 +4,7 @@ src/casas/rabbitmq.py filter=git-crypt diff=git-crypt
 src/casas/xmpp.py filter=git-crypt diff=git-crypt
 src/casas/publish.py filter=git-crypt diff=git-crypt
 src/casas/publish.cfg filter=git-crypt diff=git-crypt
+src/casas/publish_test.cfg filter=git-crypt diff=git-crypt
 scripts/casas_manager.py filter=git-crypt diff=git-crypt
 scripts/casas_observer.py filter=git-crypt diff=git-crypt
 scripts/casas.cfg filter=git-crypt diff=git-crypt
