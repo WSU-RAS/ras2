@@ -28,25 +28,25 @@ class WaterPlantsDag(object):
         'current': 'rinse_can',
         'next': 'return_can'
     }
-    water_plant3 = {
+    water_plantside = {
         'P2': None,
         'W': None,
         'P3': rinse_can,
-        'current': 'water_plant3',
+        'current': 'water_plantside',
         'next': 'rinse_can'
     }
-    water_plant2 = {
+    water_plantcoffee = {
         'S': None,
         'W': None,
-        'P2': water_plant3,
-        'current': 'water_plant2',
-        'next': 'water_plant3'
+        'P2': water_plantside,
+        'current': 'water_plantcoffee',
+        'next': 'water_plantside'
     }
     fill_can = {
         'W': None,
-        'S': water_plant2,
+        'S': water_plantcoffee,
         'current': 'fill_can',
-        'next': 'water_plant2'
+        'next': 'water_plantcoffee'
     }
     get_can = {
         'W': fill_can,
@@ -58,8 +58,8 @@ class WaterPlantsDag(object):
     subtask = {
         'get_can': 0,
         'fill_can': 1,
-        'water_plant2': 2,
-        'water_plant3': 3,
+        'water_plantcoffee': 2,
+        'water_plantside': 3,
         'rinse_can': 4,
         'return_can': 5,
         'Done': 6
@@ -68,13 +68,13 @@ class WaterPlantsDag(object):
         # Note: for now we'll just show the button "guide me to object" for objects to
         # be retreived since we aren't tracking them as they're moving.
         #   (description              , query object , code, current dag , next dag if error)
-        0: ('Retrieve water can'      , 'watercan'   , 'W' , get_can     , fill_can),
-        1: ('Fill water can'          , None         , 'S' , fill_can    , water_plant2),
-        2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plant2, rinse_can),
-        3: ('Water side table plant'  , 'plantside'  , 'P3', water_plant3, rinse_can),
-        4: ('Rinse water can'         , None         , 'S' , rinse_can   , return_can),
-        5: ('Return water can'        , None         , 'W' , return_can  , None),
-        6: ('Completed'               , None         , None, None        , None)
+        0: ('Retrieve water can'      , 'watercan'   , 'W' , get_can          , fill_can),
+        1: ('Fill water can'          , None         , 'S' , fill_can         , water_plantcoffee),
+        2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plantcoffee, rinse_can),
+        3: ('Water side table plant'  , 'plantside'  , 'P3', water_plantside  , rinse_can),
+        4: ('Rinse water can'         , None         , 'S' , rinse_can        , return_can),
+        5: ('Return water can'        , None         , 'W' , return_can       , None),
+        6: ('Completed'               , None         , None, None             , None)
     }
     num_tasks = 6
 
