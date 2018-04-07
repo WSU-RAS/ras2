@@ -46,11 +46,13 @@ class Scheduler:
         self.use_tablet = True
         self.teleop_only = False
         self.is_robot_moving = False
+        self.test = True
         if rospy.has_param("ras"):
             ras = rospy.get_param("ras")
             self.use_robot = ras['use_robot']
             self.use_tablet = ras['use_tablet']
             self.teleop_only = ras['teleop_only']
+            self.test = ras['is_test']
 
         self.test_error = False
         if rospy.has_param("adl"):
@@ -99,7 +101,8 @@ class Scheduler:
     def casas_logging(self, event):
         # CASAS Logging
         self.casas = PublishToCasas(
-            agent_num='1', node='ROS_Node_'+rospy.get_name()[1:])
+            agent_num='1', node='ROS_Node_'+rospy.get_name()[1:],
+            test=self.test) # use the test agent instead of kyoto if true
         try:
             self.casas.connect()
         finally:

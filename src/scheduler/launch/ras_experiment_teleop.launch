@@ -7,13 +7,14 @@
     <arg name="teleop_only" default="true" />
 
     <arg name="save_task" default="false" />
-    <arg name="is_test" default="false" /> <!-- testing error detection -->
+    <arg name="is_test" default="true" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
     <arg name="lab" default="false" /> <!-- uses lab map -->
 
     <!-- Parameters -->
     <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
     <param name="ras/use_tablet" value="$(arg use_tablet)" type="bool" />
     <param name="ras/teleop_only" value="$(arg teleop_only)" type="bool" />
+    <param name="ras/is_test" value="$(arg is_test)" type="bool" />
 
     <!-- Manager -->
     <node name="manager" pkg="scheduler" type="manager.py" output="screen" />
@@ -28,9 +29,9 @@
     <group if="$(arg use_tablet)">
         <include file="$(find tablet_interface)/launch/web.launch" />
     </group>
-    
+
     <!-- Not for navigating, only for determining where we are in the map for CASAS logging
-    
+
          lab true: load casas.pbstream
          lab false: load kyoto.pbstream
          -->
