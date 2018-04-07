@@ -35,12 +35,8 @@ class ErrorDetector:
         self.print_casas_log = True
         self.save_fp = None
         self.save_filename = None
-        self.use_tablet = False
-        if rospy.has_param("ras"):
-            ras = rospy.get_param("ras")
-            self.use_tablet = ras['use_tablet']
 
-        self.test = False
+        self.test = True
         self.save_task = True
         self.test_error = False
         if rospy.has_param("adl"):
@@ -76,7 +72,8 @@ class ErrorDetector:
     def casas_logging(self, event):
         # CASAS Logging
         self.casas = PublishToCasas(
-            agent_num='2', node='ROS_Node_'+rospy.get_name()[1:])
+            agent_num='2', node='ROS_Node_'+rospy.get_name()[1:],
+            test=self.test) # use the test agent instead of kyoto if true
         try:
             self.casas.connect()
         finally:
@@ -158,8 +155,9 @@ class ErrorDetector:
             target='ROS_Task_Step_Fix_Error',
             message={
                 'action':'START',
+                'task':Task.types[self.task_number],
                 'error_step':str(self.error_step),
-                'task':Task.types[self.task_number]},
+                'error_id':self.error_key},
             category='state'
         )
 
@@ -176,8 +174,9 @@ class ErrorDetector:
                 target='ROS_Task_Step_Fix_Error',
                 message={
                     'action':'SUCCEEDED',
+                    'task':Task.types[self.task_number],
                     'error_step':str(self.error_step),
-                    'task':Task.types[self.task_number]},
+                    'error_id':self.error_key},
                 category='state'
             )
             if self.test_error:
@@ -372,7 +371,10 @@ class ErrorDetector:
                             sensor_type='ROS_Task_Step',
                             serial=self.mac_address,
                             target='ROS_Task_Step',
-                            message={'task':Task.types[self.task_number], 'step':str(self.current_step)},
+                            message={
+                                'task':Task.types[self.task_number],
+                                'step':str(self.current_step),
+                                'id':check_result[2]},
                             category='state'
                         )
                         rospy.loginfo('Task={} at step={}'.format(Task.types[self.task_number], self.current_step))

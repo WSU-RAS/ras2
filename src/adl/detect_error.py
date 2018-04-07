@@ -73,7 +73,7 @@ def _check_sequence(graph, seq=[], task_count=0, task_num=-1, current=None):
 if __name__ == '__main__':
 
     print(check_sequence(
-        WaterPlantsDag.water_plant2,
+        WaterPlantsDag.water_plantcoffee,
         seq=['W','W','W'],
         task_count=2,
         task_num=WaterPlantsDag.num_tasks))
