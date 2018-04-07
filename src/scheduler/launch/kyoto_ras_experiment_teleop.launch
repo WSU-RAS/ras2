@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Can be set as argument during roslaunch -->
+    <arg name="use_robot" default="false" /> <!-- use teleop rather than navigation, camera, etc. -->
+    <arg name="use_tablet" default="true" />
+    <arg name="use_error" default="true" />
+    <arg name="teleop_only" default="true" />
+
+    <arg name="save_task" default="false" />
+    <arg name="is_test" default="false" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
+    <arg name="lab" default="false" /> <!-- uses lab map -->
+
+    <include file="$(find scheduler)/launch/ras_experiment_teleop.launch">
+        <arg name="use_robot" value="$(arg use_robot)" />
+        <arg name="use_tablet" value="$(arg use_tablet)" />
+        <arg name="use_error" value="$(arg use_error)" />
+        <arg name="teleop_only" value="$(arg teleop_only)" />
+        <arg name="save_task" value="$(arg save_task)" />
+        <arg name="is_test" value="$(arg is_test)" />
+        <arg name="lab" value="$(arg lab)" />
+    </include>
+</launch>
