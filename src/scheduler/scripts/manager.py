@@ -112,6 +112,7 @@ class Scheduler:
     def shutdown(self):
         if self.is_goto_active and self.use_robot:
             self.goto_client.cancel_goal()
+        self.casas.finish()
 
     def robot_cmd_vel_cb(self, msg):
         """
