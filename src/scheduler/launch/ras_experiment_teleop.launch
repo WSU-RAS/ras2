@@ -4,6 +4,7 @@
     <arg name="use_robot" default="false" /> <!-- use teleop rather than navigation, camera, etc. -->
     <arg name="use_tablet" default="true" />
     <arg name="use_error" default="true" />
+    <arg name="use_camera" default="false" />
     <arg name="teleop_only" default="true" />
 
     <arg name="save_task" default="false" />
@@ -57,5 +58,12 @@
             <arg name="is_test" value="$(arg is_test)" />
             <arg name="save_task" value="$(arg save_task)" />
         </include>
+    </group>
+
+    <!-- Camera, object detection, etc. -->
+    <group if="$(arg use_camera)">
+        <node name="jetson" pkg="scheduler" type="jetson.sh" args="$(arg lab)" output="screen" />
+        <!-- for experimenter interface, to see video -->
+        <node name="web_video_server" pkg="web_video_server" type="web_video_server" />
     </group>
 </launch>
