@@ -4,6 +4,7 @@
     <arg name="use_robot" default="false" /> <!-- use teleop rather than navigation, camera, etc. -->
     <arg name="use_tablet" default="true" />
     <arg name="use_error" default="true" />
+    <arg name="use_camera" default="false" />
     <arg name="teleop_only" default="true" />
 
     <arg name="save_task" default="false" />
@@ -14,6 +15,7 @@
         <arg name="use_robot" value="$(arg use_robot)" />
         <arg name="use_tablet" value="$(arg use_tablet)" />
         <arg name="use_error" value="$(arg use_error)" />
+        <arg name="use_camera" value="$(arg use_camera)" />
         <arg name="teleop_only" value="$(arg teleop_only)" />
         <arg name="save_task" value="$(arg save_task)" />
         <arg name="is_test" value="$(arg is_test)" />
