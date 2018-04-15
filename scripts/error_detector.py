@@ -337,15 +337,22 @@ class ErrorDetector:
 
     def __casas_cb(self, sensors):
         new_seq = []
+        pause = self.task_pause
         for sensor in sensors:
             sensor_str = "{}\t{}\t{}".format(
                 str(sensor.stamp), str(sensor.target), str(sensor.message))
             #if self.task_status.status == TaskStatus.ACTIVE:
             rospy.loginfo(sensor_str)
-            if self.task_status.status == TaskStatus.ACTIVE:
+            if self.task_status.status == TaskStatus.ACTIVE and not pause:
                 self.__add_sensor_to_sequence(sensor, new_seq)
             if self.save_task and self.save_fp is not None:
                 self.save_fp.write("{}\n".format(sensor_str))
+
+        # Catch some threading race issue when task is paused for
+        # error detection and in the middle of the for loop task is unpaused
+        # sensor readings should not be used for error detection
+        if pause:
+            return
 
         if self.task_status.status == TaskStatus.ACTIVE and not self.task_pause:
             if len(new_seq) > 0:
