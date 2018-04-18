@@ -1,5 +1,12 @@
 # Robot Activity Support (RAS)
 
+## Requirements
+Install the following python modules:
+```
+sudo pip install gitpython
+sudo pip install git-url-parse
+```
+
 ## Run RAS Experiment
 
 Run the full RAS experiment with robot and tablet.

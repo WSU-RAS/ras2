@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import rospy
+import rospkg
 import math
+import git, giturlparse
 
 from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
@@ -92,7 +94,11 @@ class Scheduler:
         self.do_error.start()
         rospy.on_shutdown(self.shutdown)
 
-        rospy.Timer(rospy.Duration(1), self.casas_logging, oneshot=True)
+        # Initiates CASAS logger
+        rospy.Timer(rospy.Duration(0.01), self.casas_logging, oneshot=True)
+
+        # Log system information to CASAS
+        rospy.Timer(rospy.Duration(1), self.system_log, oneshot=True)
 
         if self.use_robot or self.teleop_only:
             rospy.Subscriber('/cmd_vel', Twist, self.robot_cmd_vel_cb)
@@ -112,6 +118,34 @@ class Scheduler:
         finally:
             rospy.signal_shutdown("Cannot connect to CASAS! Need to restart.")
             self.casas.finish()
+
+    def system_log(self, event):
+        rospack = rospkg.RosPack()
+        pkg_path = rospack.get_path('scheduler')
+        repo = git.Repo(pkg_path, search_parent_directories=True)
+
+        modules = {}
+        url = repo.remote().url
+        p = giturlparse.parse(url)
+        target = '{}/{}'.format(p.owner, p.name)
+        message = '{}'.format(repo.head.object.hexsha)
+        modules[target] = message
+
+        for sm in repo.submodules:
+            p = giturlparse.parse(sm.url)
+            target = '{}/{}'.format(p.owner, p.name)
+            message = '{}'.format(sm.hexsha)
+            modules[target] = message
+
+        for target in modules.keys():
+            self.casas.publish(
+                package_type='ROS',
+                sensor_type='Module_Version',
+                serial=self.mac_address,
+                target=target,
+                message=modules[target],
+                category='system'
+            )
 
     def shutdown(self):
         if self.is_goto_active and self.use_robot:
