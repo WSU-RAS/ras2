@@ -79,7 +79,7 @@ if __name__ == '__main__':
         task_num=WaterPlantsDag.num_tasks))
 
     print(check_sequence(
-        WaterPlantsDag.taskStart,
+        WaterPlantsDag.task_start,
         seq=['W', 'S', 'P2', 'P3', 'S'],
         task_num=WaterPlantsDag.num_tasks))
     print(check_sequence(
@@ -88,17 +88,17 @@ if __name__ == '__main__':
         task_num=WaterPlantsDag.num_tasks))
 
     print(check_sequence(
-        WalkDogDag.taskStart,
+        WalkDogDag.task_start,
         seq=['U', 'U', 'U'],
         task_num=WalkDogDag.num_tasks))
 
     print(check_sequence(
-        WalkDogDag.taskStart,
+        WalkDogDag.task_start,
         seq=['U', 'L', 'K', 'D', 'DR'],
         task_num=WalkDogDag.num_tasks))
 
     print(check_sequence(
-        TakeMedicationDag.taskStart,
+        TakeMedicationDag.task_start,
         seq=['F', 'F', 'C', 'C', 'F', 'F', 'C', 'F', 'S', 'S',
              'F', 'C', 'C', 'C', 'F', 'F', 'C', 'C', 'M', 'CH',
              'CH', 'C', 'F', 'F', 'F', 'M', 'M', 'C', 'C', 'C',
