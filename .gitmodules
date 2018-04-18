@@ -22,14 +22,6 @@
 	path = src/tablet_interface
 	url = https://github.com/WSU-RAS/tablet_interface.git
         branch = master
-[submodule "src/rosbridge_suite"]
-	path = src/rosbridge_suite
-	url = https://github.com/RobotWebTools/rosbridge_suite.git
-        branch = master
-[submodule "src/rosauth"]
-	path = src/rosauth
-	url = https://github.com/GT-RAIL/rosauth.git
-        branch = master
 [submodule "src/turtlebot3_msgs"]
 	path = src/turtlebot3_msgs
 	url = https://github.com/WSU-RAS/turtlebot3_msgs.git
