@@ -6,7 +6,7 @@ import datetime
 import logging
 import configparser
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from adl import check_sequence
@@ -35,6 +35,7 @@ class ErrorDetector:
         self.print_casas_log = True
         self.save_fp = None
         self.save_filename = None
+        self.sensors = deque()
 
         self.test = True
         self.save_task = True
@@ -92,10 +93,13 @@ class ErrorDetector:
         self.error_index = -1
         self.error_code = None
         self.last_key = None
+        self.sensors.clear()
         if self.task_number >= 0:
             self.task_dag = TaskToDag.mapping[self.task_number].task_start
 
     def ros_setup(self):
+        rospy.Timer(rospy.Duration(0.1), self.__error_detection_cb, oneshot=True)
+
         # start task rosservice server
         self.task_service = rospy.Service(
             'task_controller', TaskController,
@@ -335,26 +339,9 @@ class ErrorDetector:
         rospy.loginfo("error_detector: {}".format(result))
         return result
 
-    def __casas_cb(self, sensors):
-        new_seq = []
-        pause = self.task_pause
-        for sensor in sensors:
-            sensor_str = "{}\t{}\t{}".format(
-                str(sensor.stamp), str(sensor.target), str(sensor.message))
-            #if self.task_status.status == TaskStatus.ACTIVE:
-            rospy.loginfo(sensor_str)
-            if self.task_status.status == TaskStatus.ACTIVE and not pause:
-                self.__add_sensor_to_sequence(sensor, new_seq)
-            if self.save_task and self.save_fp is not None:
-                self.save_fp.write("{}\n".format(sensor_str))
-
-        # Catch some threading race issue when task is paused for
-        # error detection and in the middle of the for loop task is unpaused
-        # sensor readings should not be used for error detection
-        if pause:
-            return
-
-        if self.task_status.status == TaskStatus.ACTIVE and not self.task_pause:
+    def __error_detection(self):
+        if len(self.sensors) > 0 and self.task_status.status == TaskStatus.ACTIVE and not self.task_pause:
+            new_seq = self.sensors.popleft()
             if len(new_seq) > 0:
                 check_result = self.__check_error(new_seq)
                 is_error_detected = not check_result[1] and not check_result[3]
@@ -366,6 +353,10 @@ class ErrorDetector:
                     self.task_pause = True
                     if self.test_error:
                         self.pause_dummy_data(True)
+
+                    # Empty out sensors queue
+                    self.sensors.clear()
+                    # Start error correction
                     self.start_error_correction(check_result)
 
                 # No Error Detected
@@ -392,6 +383,35 @@ class ErrorDetector:
                 self.task_sequence.extend(new_seq)
                 rospy.loginfo("seq :{}".format("-".join(self.task_sequence)))
                 rospy.loginfo("seq*:{}".format("-".join(self.task_sequence_full)))
+
+    def __error_detection_cb(self):
+        while not rospy.is_shutdown():
+            try:
+                self.__error_detection()
+                rospy.sleep(0.001)
+            except KeyboardInterrupt:
+                break
+
+    def __casas_cb(self, sensors):
+        new_seq = []
+        pause = self.task_pause
+        for sensor in sensors:
+            sensor_str = "{}\t{}\t{}".format(
+                str(sensor.stamp), str(sensor.target), str(sensor.message))
+            #if self.task_status.status == TaskStatus.ACTIVE:
+            rospy.loginfo(sensor_str)
+            if self.task_status.status == TaskStatus.ACTIVE and not pause:
+                self.__add_sensor_to_sequence(sensor, new_seq)
+            if self.save_task and self.save_fp is not None:
+                self.save_fp.write("{}\n".format(sensor_str))
+
+        # Catch some threading race issue when task is paused for
+        # error detection and in the middle of the for loop task is unpaused
+        # sensor readings should not be used for error detection
+        if pause:
+            return
+
+        self.sensors.append(new_seq)
 
     def casas_run(self):
         try:
