@@ -83,7 +83,7 @@ if __name__ == '__main__':
         seq=['W', 'S', 'P2', 'P3', 'S'],
         task_num=WaterPlantsDag.num_tasks))
     print(check_sequence(
-        WaterPlantsDag.taskStart,
+        WaterPlantsDag.task_start,
         seq=['W', 'S', 'P2', 'P3', 'S', 'W'],
         task_num=WaterPlantsDag.num_tasks))
 
