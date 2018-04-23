@@ -23,6 +23,7 @@ from ras_msgs.msg import TaskStatus
 from ras_msgs.srv import TaskController, TaskControllerResponse
 from ras_msgs.srv import Pause
 
+
 class ErrorDetector:
 
     def __init__(self):
@@ -320,13 +321,10 @@ class ErrorDetector:
         is_door_closed = sensor.target in ['D001', 'D011'] \
             and sensor.message == 'CLOSE'
         if is_estimote or is_door_closed:
-            decode_key = Items.decode[sensor.target]
+            code = Items.decode[sensor.target]
             # Only include item used in the task
-            if self.task_number in Items.encode[decode_key][2]:
-                code = Items.encode[decode_key][1]
+            if self.task_number in Items.encode[code][2]:
                 sequence.append(code)
-                rospy.loginfo("{}\t{}\t{}".format(
-                    str(sensor.stamp), str(sensor.target), str(sensor.message)))
 
     def __check_error(self, new_sequence):
         task_key = self.task_dag['current']
@@ -342,53 +340,54 @@ class ErrorDetector:
     def __error_detection(self):
         if len(self.sensors) > 0 and self.task_status.status == TaskStatus.ACTIVE and not self.task_pause:
             new_seq = self.sensors.popleft()
-            if len(new_seq) > 0:
-                check_result = self.__check_error(new_seq)
-                is_error_detected = not check_result[1] and not check_result[3]
+            check_result = self.__check_error(new_seq)
+            is_error_detected = not check_result[1] and not check_result[3]
 
-                # Error Detected
-                if is_error_detected:
-                    if self.error_key is None:
-                        self.task_sequence_full.append("*")
-                    self.task_pause = True
-                    if self.test_error:
-                        self.pause_dummy_data(True)
+            # Error Detected
+            if is_error_detected:
+                if self.error_key is None:
+                    self.task_sequence_full.append("*")
+                self.task_pause = True
+                if self.test_error:
+                    self.pause_dummy_data(True)
 
-                    # Empty out sensors queue
-                    self.sensors.clear()
-                    # Start error correction
-                    self.start_error_correction(check_result)
+                # Empty out sensors queue
+                self.sensors.clear()
+                # Start error correction
+                self.start_error_correction(check_result)
 
-                # No Error Detected
-                else:
-                    # Check if a new step is completed in the sequence
-                    if self.last_key != check_result[2] and check_result[1]:
-                        self.current_step = TaskToDag.mapping[self.task_number].subtask[check_result[2]]
-                        self.casas.publish(
-                            package_type='ROS',
-                            sensor_type='ROS_Task_Step',
-                            serial=self.mac_address,
-                            target='ROS_Task_Step',
-                            message={
-                                'task':Task.types[self.task_number],
-                                'step':str(self.current_step),
-                                'id':check_result[2]},
-                            category='state'
-                        )
-                        rospy.loginfo('Task={} at step={}'.format(Task.types[self.task_number], self.current_step))
-                    self.last_key = check_result[2]
+            # No Error Detected
+            else:
+                # Check if a new step is completed in the sequence
+                if self.last_key != check_result[2] and check_result[1]:
+                    self.current_step = TaskToDag.mapping[self.task_number].subtask[check_result[2]]
+                    self.casas.publish(
+                        package_type='ROS',
+                        sensor_type='ROS_Task_Step',
+                        serial=self.mac_address,
+                        target='ROS_Task_Step',
+                        message={
+                            'task':Task.types[self.task_number],
+                            'step':str(self.current_step),
+                            'id':check_result[2]},
+                        category='state'
+                    )
+                    rospy.loginfo('Task={} at step={}'.format(Task.types[self.task_number], self.current_step))
+                self.last_key = check_result[2]
 
-                # Concatenate new sensor readings into task sequence
-                self.task_sequence_full.extend(new_seq)
-                self.task_sequence.extend(new_seq)
-                rospy.loginfo("seq :{}".format("-".join(self.task_sequence)))
-                rospy.loginfo("seq*:{}".format("-".join(self.task_sequence_full)))
+            # Concatenate new sensor readings into task sequence
+            self.task_sequence_full.extend(new_seq)
+            self.task_sequence.extend(new_seq)
+            if self.test:
+                rospy.logdebug("seq :{}".format("-".join(self.task_sequence)))
+                rospy.logdebug("seq*:{}".format("-".join(self.task_sequence_full)))
 
     def __error_detection_cb(self, event):
+        r = rospy.Rate(64) # 64 hertz
         while not rospy.is_shutdown():
             try:
                 self.__error_detection()
-                rospy.sleep(0.001)
+                r.sleep()
             except KeyboardInterrupt:
                 break
 
@@ -411,7 +410,9 @@ class ErrorDetector:
         if pause:
             return
 
-        self.sensors.append(new_seq)
+        # Only add new_seq if there are sensor readings
+        if len(new_seq) > 0:
+            self.sensors.append(new_seq)
 
     def casas_run(self):
         try:
