@@ -384,7 +384,7 @@ class ErrorDetector:
                 rospy.loginfo("seq :{}".format("-".join(self.task_sequence)))
                 rospy.loginfo("seq*:{}".format("-".join(self.task_sequence_full)))
 
-    def __error_detection_cb(self):
+    def __error_detection_cb(self, event):
         while not rospy.is_shutdown():
             try:
                 self.__error_detection()
