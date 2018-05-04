@@ -124,6 +124,9 @@ def multi_path(origin, object_name):
         names.append('b1_b2_1')
         names.append('b1_b2_2')
         names.append('b1_b2_3')
+    # navigate to the pillbottle if the robot starts from table
+    elif (origin != "base2" and object_name == "pillbottle"):
+        names.append('universal_kitchen')
 
     #navigate to universal point if not at base2
     elif (origin != "base2"):
@@ -133,13 +136,13 @@ def multi_path(origin, object_name):
     elif (origin == "base2"):
         names.append('b2_b1_1')
         names.append('b2_b1_2')
-    
+
     #If all else fails, send it to uni
     else:
         names.append('b1_b2_1')
 
     #Append actual goal object to goal_names_list, unless it is empty (incase of human)
-    if (object_name != ""):    
+    if (object_name != ""):
         names.append(object_name)
 
     points = []
@@ -175,7 +178,7 @@ class GotoXYState(smach.State):
         )
         self.rate = rospy.Rate(10)
 
-        rospy.loginfo("GotoNewBaseState has been initialized, Waiting for the move_base action server")       
+        rospy.loginfo("GotoNewBaseState has been initialized, Waiting for the move_base action server")
 
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         self.move_base.wait_for_server(rospy.Duration(2))
@@ -272,11 +275,6 @@ class GotoXYState(smach.State):
         self.is_running = True
         self.movebase_client()
 
-        ''' -Chris_test
-        #Chris_test replacement code
-        args = [self.is_running, self.success, data]
-        Goto_points(args)
-        ''' 
 
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=120, nsecs=0)
