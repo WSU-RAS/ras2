@@ -22,7 +22,7 @@ class WaterPlantsDag(object):
         'next': 'Done'
     }
     rinse_can = {
-        'P3': 'sink',
+        'P3': None,
         'W': None,
         'S': return_can,
         'current': 'rinse_can',
@@ -43,7 +43,7 @@ class WaterPlantsDag(object):
         'next': 'water_plantside'
     }
     fill_can = {
-        'W': 'sink',
+        'W': None,
         'S': water_plantcoffee,
         'current': 'fill_can',
         'next': 'water_plantcoffee'
@@ -69,10 +69,10 @@ class WaterPlantsDag(object):
         # be retreived since we aren't tracking them as they're moving.
         #   (description              , query object , code, current dag , next dag if error)
         0: ('Retrieve water can'      , 'watercan'   , 'W' , get_can          , fill_can),
-        1: ('Fill water can'          , None         , 'S' , fill_can         , water_plantcoffee),
+        1: ('Fill water can'          , 'sink'         , 'S' , fill_can         , water_plantcoffee),
         2: ('Water coffee table plant', 'plantcoffee', 'P2', water_plantcoffee, rinse_can),
         3: ('Water side table plant'  , 'plantside'  , 'P3', water_plantside  , rinse_can),
-        4: ('Rinse water can'         , None         , 'S' , rinse_can        , return_can),
+        4: ('Rinse water can'         , 'sink'         , 'S' , rinse_can        , return_can),
         5: ('Return water can'        , None         , 'W' , return_can       , None),
         6: ('Completed'               , None         , None, None             , None)
     }
@@ -241,14 +241,14 @@ class TakeMedicationDag(object):
         #   (description          , query object, code, current dag  , next dag if error)
         0:  ('Retrieve food'      , 'food'      , 'F' , get_food     , fill_cup),
         1:  ('Retrieve cup'       , 'glass'     , 'C' , get_cup      , fill_cup),
-        2:  ('Fill cup'           , None        , 'S' , fill_cup     , sit_chair),
+        2:  ('Fill cup'           , 'sink'        , 'S' , fill_cup     , sit_chair),
         3:  ('Retrieve medication', 'pillbottle', 'M' , get_med      , eat_food),
         4:  ('Sit chair'          , None        , 'CH', sit_chair    , take_med),
         5:  ('Eat food'           , None        , 'F' , eat_food     , drink_water),
         6:  ('Take medication'    , None        , 'M' , take_med     , stand_up),
         7:  ('Drink water'        , None        , 'C' , drink_water  , rinse_cup),
         8:  ('Stand up'           , None        , 'CH', stand_up     , throw_garbage),
-        9:  ('Rinse cup'          , None        , 'C' , rinse_cup    , None),
+        9:  ('Rinse cup'          , 'sink'        , 'C' , rinse_cup    , None),
         10: ('Throw garbage'      , None        , 'G' , throw_garbage, None),
         11: ('Completed'          , None        , None, None         , None)
     }
