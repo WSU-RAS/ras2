@@ -22,7 +22,7 @@ class WaterPlantsDag(object):
         'next': 'Done'
     }
     rinse_can = {
-        'P3': None,
+        'P3': 'sink',
         'W': None,
         'S': return_can,
         'current': 'rinse_can',
@@ -43,7 +43,7 @@ class WaterPlantsDag(object):
         'next': 'water_plantside'
     }
     fill_can = {
-        'W': None,
+        'W': 'sink',
         'S': water_plantcoffee,
         'current': 'fill_can',
         'next': 'water_plantcoffee'
