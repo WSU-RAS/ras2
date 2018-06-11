@@ -645,6 +645,8 @@ class TabletData(object):
             video_step_url = 'waterplants.error{}.mp4'.format(error_step)
             if error_step == 0:
                 object_to_find = 'watercan'
+            elif error_step == 1:
+                object_to_find = 'sink'
             elif error_step == 2:
                 object_to_find = 'plantcoffee'
             elif error_step == 3:
@@ -657,6 +659,8 @@ class TabletData(object):
                 object_to_find = 'food'
             elif error_step == 1:
                 object_to_find = 'glass'
+            elif error_step == 2:
+                object_to_find = 'sink'
             elif error_step == 3:
                 object_to_find = 'pillbottle'
 
