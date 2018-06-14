@@ -246,7 +246,7 @@ class TakeMedicationDag(object):
         3:  ('Retrieve medication', 'pillbottle', 'M' , get_med      , eat_food),
         4:  ('Sit chair'          , None        , 'CH', sit_chair    , take_med),
         5:  ('Eat food'           , None        , 'F' , eat_food     , drink_water),
-        6:  ('Take medication'    , 'pills'     , 'PL' , take_med     , stand_up),
+        6:  ('Take medication'    , 'pills'     , 'M' , take_med     , stand_up),
         7:  ('Drink water'        , None        , 'C' , drink_water  , rinse_cup),
         8:  ('Stand up'           , None        , 'CH', stand_up     , throw_garbage),
         9:  ('Rinse cup'          , 'sink'      , 'C' , rinse_cup    , None),
