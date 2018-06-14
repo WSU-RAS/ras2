@@ -31,7 +31,8 @@ class Items(object):
         'C': (11, 'cup', [Task.TAKE_MEDS]),
         'M': (12, 'medication', [Task.TAKE_MEDS]),
         'CH': (13, 'chair', [Task.TAKE_MEDS]),
-        'G': (14, 'garbage', [Task.TAKE_MEDS])
+        'G': (14, 'garbage', [Task.TAKE_MEDS]),
+        'PL': (15, 'pills', [Task.TAKE_MEDS])
     }
 
     decode = {
