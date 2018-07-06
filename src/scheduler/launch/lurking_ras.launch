@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Can be set as argument during roslaunch -->
+    <arg name="use_robot" default="true" />
+    <arg name="use_tablet" default="true" />
+    <arg name="use_error" default="true" />
+    <arg name="use_camera" default="true" />
+    <arg name="teleop_only" default="false" />
+
+    <arg name="save_task" default="false" />
+    <arg name="is_test" default="true" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
+    <arg name="new_map" default="false" />
+    <arg name="gui" default="false" />
+    <arg name="lab" default="false" /> <!-- uses lab map and object locations file -->
+
+    <!-- Parameters -->
+    <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
+    <param name="ras/use_tablet" value="$(arg use_tablet)" type="bool" />
+    <param name="ras/teleop_only" value="$(arg teleop_only)" type="bool" />
+    <param name="ras/is_test" value="$(arg is_test)" type="bool" />
+
+    <!-- Manager -->
+    <node name="manager" pkg="scheduler" type="manager.py" output="screen" />
+
+    <!-- Robot -->
+    <group if="$(arg use_robot)">
+        <node name="goto" pkg="scheduler" type="goto.py" output="screen" />
+        <node name="find_person_server" pkg="find_person" type="find_person_server.py" output="screen" />
+
+        <node name="go" pkg="ras_navigation" type="go.py" output="screen" />
+
+        <!--
+             Since we don't have good if/else or switch statements and you can't
+             change arg values...
+
+             new_map true: then save to map.pbstream
+             new_map false:
+                 lab true: load casas.pbstream
+                 lab false: load kyoto.pbstream
+             -->
+        <group if="$(eval new_map == true)">
+            <!-- Navigation -->
+            <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+                <arg name="new_map" value="$(arg new_map)" />
+                <arg name="gui" value="$(arg gui)" />
+                <arg name="map_name" value="map.pbstream" />
+            </include>
+        </group>
+        <group if="$(eval new_map == false)">
+            <group if="$(eval lab == true)">
+                <!-- Navigation -->
+                <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+                    <arg name="new_map" value="$(arg new_map)" />
+                    <arg name="gui" value="$(arg gui)" />
+                    <arg name="map_name" value="casas.pbstream" />
+                </include>
+            </group>
+            <group if="$(eval lab == false)">
+                <!-- Navigation -->
+                <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+                    <arg name="new_map" value="$(arg new_map)" />
+                    <arg name="gui" value="$(arg gui)" />
+                    <arg name="map_name" value="kyoto.pbstream" />
+                </include>
+            </group>
+        </group>
+    </group>
+
+    <!-- Tablet -->
+    <group if="$(arg use_tablet)">
+        <include file="$(find tablet_interface)/launch/web.launch" />
+    </group>
+
+    <!-- Allow powering off from experimenter interface -->
+    <node name="poweroff" pkg="scheduler" type="poweroff.py" output="screen" />
+
+    <!-- Error detection -->
+    <group if="$(arg use_error)">
+        <include file="$(find adl_error_detection)/launch/detect_error.launch">
+            <arg name="is_test" value="$(arg is_test)" />
+            <arg name="save_task" value="$(arg save_task)" />
+        </include>
+    </group>
+
+    <!-- Camera, object detection, etc. -->
+    <group if="$(arg use_camera)">
+        <node name="jetson" pkg="scheduler" type="jetson.sh" args="$(arg lab)" output="screen" />
+        <!-- for experimenter interface, to see video -->
+        <node name="web_video_server" pkg="web_video_server" type="web_video_server" />
+    </group>
+</launch>
