@@ -28,6 +28,7 @@
         <node name="find_person_server" pkg="find_person" type="find_person_server.py" output="screen" />
 
         <node name="go" pkg="ras_navigation" type="go.py" output="screen" />
+        <node name="sensor_watcher" pkg="lurking_navigation" type="sensor_watcher.py" output="screen" />
 
         <!--
              Since we don't have good if/else or switch statements and you can't
