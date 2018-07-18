@@ -8,7 +8,7 @@
     <arg name="teleop_only" default="false" />
 
     <arg name="save_task" default="false" />
-    <arg name="is_test" default="true" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
+    <arg name="is_test" default="false" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
     <arg name="new_map" default="false" />
     <arg name="gui" default="false" />
     <arg name="lab" default="false" /> <!-- uses lab map and object locations file -->
