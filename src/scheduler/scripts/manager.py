@@ -663,6 +663,8 @@ class TabletData(object):
                 object_to_find = 'sink'
             elif error_step == 3:
                 object_to_find = 'pillbottle'
+            elif error_step == 6:
+                object_to_find = 'pills'
 
         elif task_number == Task.WALK_DOG:
             video_full_url = 'walkdog.all.mp4'
