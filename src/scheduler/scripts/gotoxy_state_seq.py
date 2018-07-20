@@ -124,22 +124,25 @@ def multi_path(origin, object_name):
         names.append('b1_b2_1')
         names.append('b1_b2_2')
         names.append('b1_b2_3')
+    
     # navigate to the pillbottle if the robot starts from table
-    elif (origin != "base2" and object_name == "pillbottle"):
-        names.append('universal_kitchen')
-
-    #navigate to universal point if not at base2
-    elif (origin != "base2"):
-        names.append('b1_b2_1')
+    #elif (origin != "base2" and object_name == "pillbottle"):
+    #    names.append('universal_kitchen')
+    
+    # *** REALY BAD IDEA *** #
+    # Navigate to universal point if not at base2
+    #elif (origin != "base2"):
+    #    names.append('b1_b2_1')
 
     #Objects
     elif (origin == "base2"):
         names.append('b2_b1_1')
         names.append('b2_b1_2')
 
-    #If all else fails, send it to uni
-    else:
-        names.append('b1_b2_1')
+    # *** REALY BAD IDEA DONT DO THIS *** #
+    # If all else fails, send it to uni
+    #else:
+    #    names.append('b1_b2_1')
 
     #Append actual goal object to goal_names_list, unless it is empty (incase of human)
     if (object_name != ""):
