@@ -26,6 +26,10 @@ class FindObjectState(smach.State):
                          'orientation_z_out', 'orientation_w_out', 'points_out',
                          'object_name_out']
         )
+        self.use_location = False
+        if rospy.has_param("adl"):
+            adl = rospy.get_param("adl")
+            self.use_location = adl['use_location']
         self.rate = rospy.Rate(10)
 
     def execute(self, userdata):
@@ -49,7 +53,7 @@ class FindObjectState(smach.State):
 
 
         else:
-            object_to_find = TaskToDag.mapping[userdata.task_number_in].subtask_info[userdata.error_step_in][1]
+            object_to_find = TaskToDag.mapping[userdata.task_number_in][1 if self.use_location else 0].subtask_info[userdata.error_step_in][1]
 
         # TODO we don't even use these points but re-run this in the
         # GotoXYState based on object_to_find?
@@ -112,7 +116,7 @@ class GotoObjectSMACH():
             )
         sis = smach_ros.IntrospectionServer('GotoObjectSMACH', sm, '/GotoObjectSMACH')
         sis.start()
-        
+
         outcome = sm.execute()
         GotoObjectSMACH.last_object = sm.userdata.sm_last_object
         return outcome

@@ -58,10 +58,11 @@ class Scheduler:
             self.test = ras['is_test']
 
         self.test_error = False
+        self.use_location = False
         if rospy.has_param("adl"):
             adl = rospy.get_param("adl")
             self.test_error = adl['test_error']
-
+            self.use_location = adl['use_location']
         self.do_error = SimpleActionServer(
             'do_error', DoErrorAction,
             execute_cb=self.do_error_execute,
@@ -653,11 +654,19 @@ class TabletData(object):
         elif task_number == Task.TAKE_MEDS:
             video_full_url = 'takemedication.all.mp4'
             video_step_url = 'takemedication.error{}.mp4'.format(error_step)
+            #Adjust videos since we track new steps
+            if self.use_location:
+                if error_step == 3 or error_step == 5: #put_food_cup and put_med
+                    video_step_url = '' #no video
+                elif error_step == 4:
+                    video_step_url = 'takemedication.error{}.mp4'.format(error_step - 1)
+                elif error_step >= 6:
+                    video_step_url = 'takemedication.error{}.mp4'.format(error_step - 2)
             if error_step == 0:
                 object_to_find = 'food'
             elif error_step == 1:
                 object_to_find = 'glass'
-            elif error_step == 3:
+            elif error_step == (3 if not self.use_location else 4):
                 object_to_find = 'pillbottle'
 
         elif task_number == Task.WALK_DOG:

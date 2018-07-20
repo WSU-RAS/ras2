@@ -10,6 +10,7 @@
     <arg name="save_task" default="false" />
     <arg name="is_test" default="true" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
     <arg name="test_error" default="true" /> <!-- test only when using dummy data -->
+    <arg name="use_location" default="false" /> <!-- if FALSE, uses only estimote sensors, TRUE includes ambient sensors -->
     <arg name="new_map" default="false" />
     <arg name="gui" default="false" />
 
@@ -45,6 +46,7 @@
             <arg name="is_test" value="$(arg is_test)" />
             <arg name="save_task" value="$(arg save_task)" />
             <arg name="test_error" value="$(arg test_error)" />
+            <arg name="use_location" value="$(arg use_location)" />
         </include>
 
         <group if="$(arg test_error)">
