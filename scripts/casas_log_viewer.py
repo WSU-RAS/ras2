@@ -10,7 +10,6 @@ from collections import defaultdict
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from adl import check_sequence
-from adl.util import Items, TaskToDag
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
 from adl.util import Task, Goal, Status

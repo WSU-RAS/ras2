@@ -10,7 +10,7 @@ from collections import defaultdict, deque
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from adl import check_sequence
-from adl.util import Items, TaskToDag
+from adl.util import Items, TaskToDag, Locations
 from adl.util import WaterPlantsDag, WalkDogDag, TakeMedicationDag
 from adl.util import ConnectPythonLoggingToRos
 from adl.util import Task, Goal, Status
@@ -37,15 +37,18 @@ class ErrorDetector:
         self.save_fp = None
         self.save_filename = None
         self.sensors = deque()
+        self.locations = deque()
 
         self.test = True
         self.save_task = True
         self.test_error = False
+        self.use_location = True
         if rospy.has_param("adl"):
             adl = rospy.get_param("adl")
             self.test = adl['is_test']
             self.save_task = adl['save_task']
             self.test_error = adl['test_error']
+            self.use_location = adl['use_location']
         self.task_status = TaskStatus()
 
         self.task_setup()
@@ -88,6 +91,7 @@ class ErrorDetector:
         self.task_status.text = text
         self.task_sequence = []
         self.task_sequence_full = []
+        self.task_locations = []
         self.task_pause = False
         self.task_dag = None
         self.error_key = None
@@ -95,8 +99,9 @@ class ErrorDetector:
         self.error_code = None
         self.last_key = None
         self.sensors.clear()
+        self.locations.clear()
         if self.task_number >= 0:
-            self.task_dag = TaskToDag.mapping[self.task_number].task_start
+            self.task_dag = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].task_start
 
     def ros_setup(self):
         rospy.Timer(rospy.Duration(0.1), self.__error_detection_cb, oneshot=True)
@@ -125,8 +130,8 @@ class ErrorDetector:
 
     def start_error_correction(self, error_status):
         self.error_key = error_status[4]
-        self.error_step = TaskToDag.mapping[self.task_number].subtask[self.error_key]
-        self.error_code = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][2]
+        self.error_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[self.error_key]
+        self.error_code = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask_info[self.error_step][2]
         self.error_index = len(self.task_sequence)
         self.last_key = self.error_key
         rospy.loginfo("error_detector: Initiating error correction for {} at step {}".format(
@@ -212,15 +217,16 @@ class ErrorDetector:
         self.task_pause = False
 
     def __correct_sequence(self):
-        self.task_dag = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
+        self.task_dag = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask_info[self.error_step][4]
         self.task_sequence = []
+        self.task_locations = []
         self.task_sequence_full.append(self.error_code + '*')
         """ OLD
         # Fix error by adding missing step in sequence
         self.task_sequence.insert(self.error_index, self.error_code)
-        next_dag = TaskToDag.mapping[self.task_number].subtask_info[self.error_step][4]
+        next_dag = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask_info[self.error_step][4]
         current = next_dag['current']
-        next_step = TaskToDag.mapping[self.task_number].subtask[current]
+        next_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[current]
         # Redo next step when next step is dependent to error step
         if (next_step - self.error_step) == 1:
             self.task_sequence = self.task_sequence[:self.error_index + 1]
@@ -262,6 +268,7 @@ class ErrorDetector:
                     self.save_filename = "{}-{}".format(request.id.task_number, date_str)
                     self.save_fp = open(
                         self.pkg_path + "/log/" + self.save_filename, mode='w')
+                self.current_location = 'L'
                 rospy.loginfo("error_detector: {}=START".format(Task.types[self.task_number]))
                 self.casas.publish(
                     package_type='ROS',
@@ -315,31 +322,50 @@ class ErrorDetector:
                 casas_events=True,
                 callback_function=self.__casas_cb)
 
-    def __add_sensor_to_sequence(self, sensor, sequence):
-        is_estimote = sensor.sensor_type == 'Estimote-Movement' \
+    def __add_sensor_to_sequence(self, sensor, sequence, loc, locations):
+        is_estimote = sensor.target[:3] == 'EST' \
             and sensor.message == 'MOVED'
         is_door_closed = sensor.target in ['D001', 'D011'] \
             and sensor.message == 'CLOSE'
-        if is_estimote or is_door_closed:
+        is_ambient_sensor = sensor.target[0] == 'M' and sensor.message == 'ON'
+        new_loc = None
+        label = ''
+
+        #Ambient sensors
+        if is_ambient_sensor and sensor.target in Locations.decode.keys():
+            new_loc = Locations.decode[sensor.target]
+            label = Locations.encode[new_loc][1]
+            if self.current_location != new_loc:
+                if self.use_location:
+                    locations.append('*')
+                    sequence.append('{}>{}'.format(self.current_location, new_loc))
+                self.current_location = new_loc
+        #Estimotes + Door sensors
+        elif is_estimote or is_door_closed:
             code = Items.decode[sensor.target]
+            label = Items.encode[code][1]
             # Only include item used in the task
             if self.task_number in Items.encode[code][2]:
                 sequence.append(code)
+                locations.append(loc)
+
+        return label
 
     def __check_error(self, new_sequence):
         task_key = self.task_dag['current']
-        task_step = TaskToDag.mapping[self.task_number].subtask[task_key]
+        task_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[task_key]
         result = check_sequence(
             self.task_dag,
             seq=self.task_sequence+new_sequence,
             task_count=task_step,
-            task_num=TaskToDag.mapping[self.task_number].num_tasks)
+            task_num=TaskToDag.mapping[self.task_number][1 if self.use_location else 0].num_tasks)
         rospy.loginfo("error_detector: {}".format(result))
         return result
 
     def __error_detection(self):
         if len(self.sensors) > 0 and self.task_status.status == TaskStatus.ACTIVE and not self.task_pause:
             new_seq = self.sensors.popleft()
+            new_locs = self.locations.popleft()
             check_result = self.__check_error(new_seq)
             is_error_detected = not check_result[1] and not check_result[3]
 
@@ -353,6 +379,7 @@ class ErrorDetector:
 
                 # Empty out sensors queue
                 self.sensors.clear()
+                self.locations.clear()
                 # Start error correction
                 self.start_error_correction(check_result)
 
@@ -360,7 +387,7 @@ class ErrorDetector:
             else:
                 # Check if a new step is completed in the sequence
                 if self.last_key != check_result[2] and check_result[1]:
-                    self.current_step = TaskToDag.mapping[self.task_number].subtask[check_result[2]]
+                    self.current_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[check_result[2]]
                     self.casas.publish(
                         package_type='ROS',
                         sensor_type='ROS_Task_Step',
@@ -376,11 +403,13 @@ class ErrorDetector:
                 self.last_key = check_result[2]
 
             # Concatenate new sensor readings into task sequence
-            self.task_sequence_full.extend(new_seq)
+            #self.task_sequence_full.extend(new_seq)
             self.task_sequence.extend(new_seq)
+            self.task_locations.extend(new_locs)
             if self.test:
+                rospy.logdebug("loc :{}".format("-".join(self.task_locations)))
                 rospy.logdebug("seq :{}".format("-".join(self.task_sequence)))
-                rospy.logdebug("seq*:{}".format("-".join(self.task_sequence_full)))
+                #rospy.logdebug("seq*:{}".format("-".join(self.task_sequence_full)))
 
     def __error_detection_cb(self, event):
         r = rospy.Rate(64) # 64 hertz
@@ -393,16 +422,18 @@ class ErrorDetector:
 
     def __casas_cb(self, sensors):
         new_seq = []
+        new_locs = []
         pause = self.task_pause
         for sensor in sensors:
-            sensor_str = "{}\t{}\t{}".format(
-                str(sensor.stamp), str(sensor.target), str(sensor.message))
-            #if self.task_status.status == TaskStatus.ACTIVE:
-            rospy.loginfo(sensor_str)
+            label = ''
             if self.task_status.status == TaskStatus.ACTIVE and not pause:
-                self.__add_sensor_to_sequence(sensor, new_seq)
+                label = self.__add_sensor_to_sequence(sensor, new_seq, self.current_location, new_locs)
             if self.save_task and self.save_fp is not None:
                 self.save_fp.write("{}\n".format(sensor_str))
+
+            sensor_str = "{}\t{}\t{}\t{}".format(
+                str(sensor.stamp), str(sensor.target), str(sensor.message), label)
+            rospy.loginfo(sensor_str)
 
         # Catch some threading race issue when task is paused for
         # error detection and in the middle of the for loop task is unpaused
@@ -413,6 +444,7 @@ class ErrorDetector:
         # Only add new_seq if there are sensor readings
         if len(new_seq) > 0:
             self.sensors.append(new_seq)
+            self.locations.append(new_locs)
 
     def casas_run(self):
         try:
@@ -427,7 +459,7 @@ class ErrorDetector:
 
 
 if __name__ == "__main__":
-    rospy.init_node("error_detector", disable_signals=True)
+    rospy.init_node("error_detector", disable_signals=True, log_level=rospy.INFO)
     ed = ErrorDetector()
     ed.casas_run()
     rospy.on_shutdown(ed.stop)

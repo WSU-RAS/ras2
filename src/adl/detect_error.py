@@ -64,7 +64,7 @@ def _check_sequence(graph, seq=[], task_count=0, task_num=-1, current=None):
         return task_count-1, True, current, False, graph['current']
 
     if type(graph[seq[0]]) is dict:
-        return _check_sequence(graph[seq[0]], seq, task_count+1, task_num, graph['current'])
+        return _check_sequence(graph[seq[0]], seq[1:], task_count+1, task_num, graph['current'])
 
     return _check_sequence(graph, seq[1:], task_count, task_num, current)
 

@@ -2,6 +2,7 @@
 
 from constants import Task
 from dag import WaterPlantsDag, TakeMedicationDag, WalkDogDag
+from dag import WaterPlantsWithLocationDag, TakeMedicationWithLocationDag, WalkDogWithLocationDag
 
 # Decode item numbers are based on Estimote Pairings and Script 2.0
 # Experiment Date: 2018-02-13
@@ -9,9 +10,9 @@ from dag import WaterPlantsDag, TakeMedicationDag, WalkDogDag
 class TaskToDag(object):
 
     mapping = {
-        Task.WATER_PLANTS: WaterPlantsDag,
-        Task.TAKE_MEDS: TakeMedicationDag,
-        Task.WALK_DOG: WalkDogDag
+        Task.WATER_PLANTS: (WaterPlantsDag, WaterPlantsWithLocationDag),
+        Task.TAKE_MEDS: (TakeMedicationDag, TakeMedicationWithLocationDag),
+        Task.WALK_DOG: (WalkDogDag, WalkDogWithLocationDag)
     }
 
 class Items(object):
@@ -32,10 +33,11 @@ class Items(object):
         'M': (12, 'medication', [Task.TAKE_MEDS]),
         'CH': (13, 'chair', [Task.TAKE_MEDS]),
         'G': (14, 'garbage', [Task.TAKE_MEDS]),
-        'PL': (15, 'pills', [Task.TAKE_MEDS])
+        'PL': (15, 'pills', [Task.TAKE_MEDS]),
     }
 
     decode = {
+        #Estimotes
         'EST323': 'U',
         'EST324': 'U',
         'EST321': 'L',
@@ -46,7 +48,7 @@ class Items(object):
         'EST328': 'D',
         'EST325': 'DR',
         'EST326': 'DR',
-        'D001': 'DR', # Smart Home sensor
+        'D001': 'DR', #Smart Home sensor
 
         'EST317': 'F',
         'EST318': 'F',
@@ -56,7 +58,7 @@ class Items(object):
         'EST314': 'M',
         'EST329': 'G',
         'EST330': 'G',
-        'D011': 'G', # Smart Home sensor
+        'D011': 'G', #Smart Home sensor
         'EST301': 'CH',
         'EST310': 'CH',
 
@@ -71,7 +73,7 @@ class Items(object):
         'EST315': 'S',
         'EST316': 'S',
 
-        # Old Sensor
+        #Old Sensor
         'EST096': 'U',
         'EST097': 'U',
         'EST073': 'L',
@@ -104,4 +106,36 @@ class Items(object):
         'EST084': 'P2',
         'EST093': 'S',
         'EST121': 'S',
+    }
+
+class Locations(object):
+
+    encode = {
+        'L': (0, 'living_room', [Task.WALK_DOG, Task.TAKE_MEDS, Task.WATER_PLANTS]),
+        'K': (1, 'kitchen', [Task.TAKE_MEDS, Task.WATER_PLANTS]),
+        'KH': (2, 'kitchen_hallway', [Task.WALK_DOG]),
+        'H': (3, 'hallway', [Task.WALK_DOG])
+    }
+
+    decode = {
+        #Ambient sensors
+
+        #Living room left side
+        'M001': 'L', 'M002': 'L', 'M003': 'L', 'M004': 'L', 'M006': 'L',
+        'M007': 'L', 'M008': 'L', 'M009': 'L', 'M010': 'L',
+        #Living room right side
+        'M012': 'L', 'M013': 'L', 'M014': 'L', 'M015': 'L',
+
+        #Kitchen
+        'M016': 'K', 'M017': 'K', 'M018': 'K', 'MA202': 'K',
+        #Kitchen window
+        'M051': 'K',
+
+        #Kitchen hallway
+        'M019': 'KH',
+
+        #Hallway
+        'M023': 'H', 'M022': 'H', 'M024': 'H', 'M025': 'H',
+        'M060': 'H', 'M059': 'H', 'M058': 'H', 'M057': 'H', 'M056': 'H',
+        'M055': 'H', 'M054': 'H', 'MA203': 'H',
     }

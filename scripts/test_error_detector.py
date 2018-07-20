@@ -91,20 +91,21 @@ class TestErrorDetector:
         data_file = self.pkg_path + "/data/" + file_name
         rospy.loginfo("Loading data from {}".format(file_name))
         with open(data_file) as csvfile:
-            data = csv.reader(csvfile, delimiter=' ', quotechar='|')
+            data = csv.reader(csvfile, delimiter='\t', quotechar='|')
             self.start_datetime = None
             for row in data:
+                rospy.loginfo(row[0][:-7])
                 if len(row) == 0:
                     break
-                dt = datetime.datetime.strptime(row[0] + ' ' + row[1], "%Y-%m-%d %H:%M:%S")
+                dt = datetime.datetime.strptime(row[0][:-7], "%Y-%m-%d %H:%M:%S")
                 if self.start_datetime is None:
                     self.start_datetime = dt
                 time_diff = (dt - self.start_datetime).total_seconds()
                 if len(row) > 4:
                     self.test_events[int(time_diff)].append(
-                        (row[2], row[3], row[4], row[5]))
+                        (row[1], row[2], row[3], row[4]))
                 else:
-                    self.test_events[int(time_diff)].append((row[2], row[3]))
+                    self.test_events[int(time_diff)].append((row[1], row[2]))
         rospy.loginfo("{} loaded successfully with total_events={}".format(file_name, len(self.test_events)))
         self.test_events_len = len(self.test_events)
 
@@ -170,15 +171,15 @@ class TestErrorDetector:
 
             for event in self.test_events[self.test_event_index]:
                 new_event = objects.Event(
-                    category='entity',
-                    package_type='Estimote-Sticker',
-                    sensor_type='Estimote-Movement',
+                    category='test',
+                    package_type='test',
+                    sensor_type='test',
                     message=event[1],
                     target=event[0],
-                    serial='5c02cb086ce7',
-                    by='EstimoteAgent',
-                    channel='rawevents',
-                    site='kyoto',
+                    serial='test',
+                    by='test',
+                    channel='test',
+                    site='test',
                     epoch='{:f}'.format(epoch),
                     uuid=str(uuid.uuid4()).replace('-', ''))
                 #rospy.loginfo(new_event.get_json())
