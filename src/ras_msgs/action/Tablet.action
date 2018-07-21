@@ -1,0 +1,9 @@
+#goal definition
+string response
+---
+#result definition
+bool success
+---
+#feedback
+uint8 status
+string text
