@@ -2,10 +2,6 @@
 	path = src/turtlebot3
 	url = https://github.com/WSU-RAS/turtlebot3.git
         branch = master
-[submodule "src/ras_navigation"]
-        path = src/ras_navigation
-        url = https://github.com/WSU-RAS/RAS_Navigation.git
-        branch = joule
 [submodule "src/tablet_interface"]
 	path = src/tablet_interface
 	url = https://github.com/WSU-RAS/tablet_interface.git
