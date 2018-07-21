@@ -22,7 +22,3 @@
 	path = src/turtlebot3_msgs
 	url = https://github.com/WSU-RAS/turtlebot3_msgs.git
         branch = master
-[submodule "src/find_person"]
-	path = src/find_person
-	url = https://github.com/WSU-RAS/find_person.git
-        branch = master
