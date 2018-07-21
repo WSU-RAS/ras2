@@ -1,0 +1,5 @@
+TaskId id
+TaskStatus request
+string file
+---
+TaskStatus status

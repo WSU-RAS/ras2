@@ -1,0 +1,11 @@
+#goal definition
+uint32 task_number
+int32 error_step
+---
+#result definition
+uint8 status
+bool is_complete
+---
+#feedback
+uint8 status
+string text
