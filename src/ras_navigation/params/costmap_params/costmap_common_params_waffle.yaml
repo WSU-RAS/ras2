@@ -1,0 +1,9 @@
+obstacle_range: 20.0
+raytrace_range: 20.0
+footprint: [[-0.37, -0.18], [-0.37, 0.18], [0.15, 0.18], [0.15, -0.18]]
+
+#Robot radius is not very good
+#robot_radius: 0.35
+
+
+
