@@ -2,10 +2,6 @@
 	path = src/turtlebot3
 	url = https://github.com/WSU-RAS/turtlebot3.git
         branch = master
-[submodule "src/hls_lfcd_lds_driver"]
-	path = src/hls_lfcd_lds_driver
-	url = https://github.com/WSU-RAS/hls_lfcd_lds_driver.git
-        branch = master
 [submodule "src/object_detection_msgs"]
 	path = src/object_detection_msgs
 	url = https://github.com/WSU-RAS/object_detection_msgs.git
