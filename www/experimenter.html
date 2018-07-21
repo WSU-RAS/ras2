@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>RAS Experimenter UI</title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+  <style>
+  @media (max-width: 779px) {
+    .btn{
+       margin-bottom:8px;
+   }
+  }
+  #batwarning {
+      color: white;
+      background-color: red;
+      display: none;
+  }
+  #gotoBase {
+      display: none; /* for now hide this button, since we're not using it yet */
+  }
+  </style>
+
+  <script src="https://static.robotwebtools.org/EaselJS/current/easeljs.js"></script>
+  <script src="https://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+  <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
+  <script src="resources/mjpegcanvas.js"></script>
+  <script src="resources/ros2d.js"></script>
+  <script src="resources/nav2d.js"></script>
+<script>
+</script>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="jumbotron">
+        <div id="batwarning">
+        <h1>Please replace the battery! Plug Joule into wall and swap battery.</h1>
+        </div>
+
+      <h1 class="display-5">Experimenter UI</h1>
+      <p class="lead">This is used by the experimenter to start and end task during RAS Experiments.</p>
+      <hr class="my-2">
+      <p>Please click the button corresponding to the current task:</p>
+      <p class="lead">
+        <button id="walkDogStart" type="button" class="btn btn-primary btn-lg">Walk Dog Start</button>
+        <button id="walkDogStop" type="button" style="display:none" class="btn btn-danger btn-lg">Walk Dog End</button>
+
+        <button id="takeMedStart" type="button" class="btn btn-primary btn-lg">Take Pills Start</button>
+        <button id="takeMedStop" type="button" style="display:none" class="btn btn-danger btn-lg">Take Pills End</button>
+
+        <button id="waterPlantsStart" type="button" class="btn btn-primary btn-lg">Water Plants Start</button>
+        <button id="waterPlantsStop" type="button" style="display:none" class="btn btn-danger btn-lg">Water Plants End</button>
+      </p>
+
+      <p class="lead">
+         <button id="gotoBase" type="button" class="btn btn-danger btn-lg">Goto Base</button>
+         <button id="poweroff" type="button" class="btn btn-danger btn-lg">Poweroff</button>
+      </p>
+
+      <div class="row">
+        <div class="col">
+          Connection<br/>
+          <div id="connecting">
+            <span class="badge badge-info">CONNECTING TO ROSBRIDGE...</span>
+          </div>
+          <div id="connected" style="display:none">
+            <span class="badge badge-success">GOOD</span>
+          </div>
+          <div id="error" style="display:none">
+            <span class="badge badge-danger">ERROR IN THE BACKEND</span>
+          </div>
+          <div id="closed" style="display:none">
+            <span class="badge badge-dark">CLOSED</span>
+          </div>
+        </div>
+
+        <div class="col">
+          Status<br />
+          <div id="status">
+            <span class="badge badge-dark">---</span>
+          </div>
+        </div>
+
+        <div class="col">
+          Task<br />
+          <div id="task_name">
+            <span class="badge badge-dark">---</span>
+          </div>
+        </div>
+
+        <div class="col-7">
+          Battery<br />
+          <div id="battery" style="display:inline">
+            <span class="badge badge-dark">---</span>
+          </div>
+          <div id="batteryPercent" style="display:inline">
+            <span class="badge badge-dark">---</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!--
+    <div class="row">
+        <div class="col">
+        <h1>Map</h1>
+        <div id="map"></div>
+        </div>
+
+        <div class="col">
+        <h1>Camera</h1>
+        <div id="mjpeg"></div>
+        </div>
+    </div>
+    -->
+
+  </div>
+
+
+ <script type="text/javascript" src="http://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+ <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+
+ <script type="text/javascript" src="common.js"></script>
+ <script type="text/javascript" src="exp.js"></script>
+
+
+</body>
+</html>

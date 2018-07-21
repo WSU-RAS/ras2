@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="websocket" default="9090" />
+
+    <!-- Web socket -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+        <arg name="port" value="$(arg websocket)"/>
+    </include>
+
+    <!--
+    Simple HTTP server
+
+    Don't use this. Instead use Nginx. See README.
+
+    <arg name="http" default="8080" />
+    <arg name="directory" default="$(find tablet_interface)/www/" />
+
+    <node name="http_server" pkg="tablet_interface" type="http_server.py">
+         <param name="http_port" value="$(arg http)" />
+         <param name="directory" value="$(arg directory)" />
+    </node>
+    -->
+</launch>
