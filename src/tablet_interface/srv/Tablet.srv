@@ -1,0 +1,7 @@
+string screen
+string object
+string face_url
+string video_step_url
+string video_full_url
+---
+bool success
