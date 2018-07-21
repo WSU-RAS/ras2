@@ -1,4 +1,0 @@
-[submodule "src/turtlebot3_msgs"]
-	path = src/turtlebot3_msgs
-	url = https://github.com/WSU-RAS/turtlebot3_msgs.git
-        branch = master
