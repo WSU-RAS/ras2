@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- CASAS -->
+    <node name="casas_manager" pkg="adl_error_detection" type="casas_manager.py" output="screen" />
+    <node name="casas_observer" pkg="adl_error_detection" type="casas_observer.py" output="screen" />
+</launch>

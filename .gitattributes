@@ -1,0 +1,12 @@
+src/casas/location.py filter=git-crypt diff=git-crypt
+src/casas/objects.py filter=git-crypt diff=git-crypt
+src/casas/rabbitmq.py filter=git-crypt diff=git-crypt
+src/casas/xmpp.py filter=git-crypt diff=git-crypt
+src/casas/publish.py filter=git-crypt diff=git-crypt
+src/casas/publish.cfg filter=git-crypt diff=git-crypt
+src/casas/publish_test.cfg filter=git-crypt diff=git-crypt
+scripts/casas_manager.py filter=git-crypt diff=git-crypt
+scripts/casas_observer.py filter=git-crypt diff=git-crypt
+scripts/casas.cfg filter=git-crypt diff=git-crypt
+scripts/manager.cfg filter=git-crypt diff=git-crypt
+scripts/observer.cfg filter=git-crypt diff=git-crypt
