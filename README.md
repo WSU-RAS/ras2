@@ -1,4 +1,4 @@
-# Robot Activity Support (RAS) [Joule ONLY]
+# Robot Activity Support (RAS)
 
 ## Requirements
 Install the following python modules:
