@@ -352,14 +352,23 @@ class ErrorDetector:
         return label
 
     def __check_error(self, new_sequence):
-        task_key = self.task_dag['current']
-        task_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[task_key]
-        result = check_sequence(
-            self.task_dag,
-            seq=self.task_sequence+new_sequence,
-            task_count=task_step,
-            task_num=TaskToDag.mapping[self.task_number][1 if self.use_location else 0].num_tasks)
+        if self.task_dag is None: # Task Completed
+            task_end = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].task_end
+            task_key = task_end['current']
+            task_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[task_key]
+            result = (task_step, True, task_end['current'], True, 'Done')
+        else:
+            task_key = self.task_dag['current']
+            task_step = TaskToDag.mapping[self.task_number][1 if self.use_location else 0].subtask[task_key]
+            result = check_sequence(
+                self.task_dag,
+                seq=self.task_sequence+new_sequence,
+                task_count=task_step,
+                task_num=TaskToDag.mapping[self.task_number][1 if self.use_location else 0].num_tasks)
+
         rospy.loginfo("error_detector: {}".format(result))
+        if self.test:
+            rospy.logdebug("task_key: {}  task_step: {}".format(task_key, task_step))
         return result
 
     def __error_detection(self):
@@ -382,6 +391,11 @@ class ErrorDetector:
                 self.locations.clear()
                 # Start error correction
                 self.start_error_correction(check_result)
+                if self.test_error:
+                    self.stop_error_correction()
+                    self.__correct_sequence()
+                    self.pause_dummy_data(False)
+                    self.task_pause = False
 
             # No Error Detected
             else:
@@ -459,7 +473,7 @@ class ErrorDetector:
 
 
 if __name__ == "__main__":
-    rospy.init_node("error_detector", disable_signals=True, log_level=rospy.INFO)
+    rospy.init_node("error_detector", disable_signals=True, log_level=rospy.DEBUG)
     ed = ErrorDetector()
     ed.casas_run()
     rospy.on_shutdown(ed.stop)
