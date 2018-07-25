@@ -121,10 +121,12 @@ class Locations(object):
         #Ambient sensors
 
         #Living room left side
-        'M001': 'L', 'M002': 'L', 'M003': 'L', 'M004': 'L', 'M006': 'L',
+        #'M001': 'L', #Exclude, too close to M023(hallway)
+        'M002': 'L', 'M003': 'L', 'M004': 'L', 'M006': 'L',
         'M007': 'L', 'M008': 'L', 'M009': 'L', 'M010': 'L',
         #Living room right side
-        'M012': 'L', 'M013': 'L', 'M014': 'L', 'M015': 'L',
+        'M012': 'L', 'M013': 'L', 'M014': 'L',
+        #'M015': 'L', #Exclude, too close to M016(kitchen)
 
         #Kitchen
         'M016': 'K', 'M017': 'K', 'M018': 'K', 'MA202': 'K',
