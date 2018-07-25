@@ -62,6 +62,7 @@ class WaterPlantsDag(object):
         'current': 'get_can',
         'next': 'fill_can'
     }
+    task_end = return_can
     task_start = get_can
 
     subtask = {
@@ -132,6 +133,7 @@ class WaterPlantsWithLocationDag(object):
         'current': 'get_can',
         'next': 'fill_can'
     }
+    task_end = return_can
     task_start = get_can
 
     subtask = {
@@ -196,6 +198,7 @@ class WalkDogDag(object):
         'current': 'get_umbrella',
         'next': 'get_leash'
     }
+    task_end = exit_house
     task_start = get_umbrella
 
     subtask = {
@@ -260,6 +263,7 @@ class WalkDogWithLocationDag(object):
         'current': 'get_umbrella',
         'next': 'get_leash'
     }
+    task_end = exit_house
     task_start = get_umbrella
 
     subtask = {
@@ -364,6 +368,7 @@ class TakeMedicationDag(object):
         'current': 'get_food',
         'next': 'get_cup'
     }
+    task_end = throw_garbage
     task_start = get_food
 
     subtask = {
@@ -496,6 +501,7 @@ class TakeMedicationWithLocationDag(object):
         'current': 'get_food',
         'next': 'get_cup'
     }
+    task_end = throw_garbage
     task_start = get_food
 
     subtask = {
