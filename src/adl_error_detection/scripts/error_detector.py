@@ -473,7 +473,7 @@ class ErrorDetector:
 
 
 if __name__ == "__main__":
-    rospy.init_node("error_detector", disable_signals=True, log_level=rospy.DEBUG)
+    rospy.init_node("error_detector", disable_signals=True, log_level=rospy.INFO)
     ed = ErrorDetector()
     ed.casas_run()
     rospy.on_shutdown(ed.stop)
