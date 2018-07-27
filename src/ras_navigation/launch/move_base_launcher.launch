@@ -3,7 +3,7 @@
 <launch>
 
 
-  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base">
 
     <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
   
