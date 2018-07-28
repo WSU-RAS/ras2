@@ -44,7 +44,18 @@ type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
 
 
   <!-- Move base -->
-  <include file="$(find ras_navigation)/launch/move_base_launcher.launch"/>
+  <!-- Derivative of work found in /opt/ros/kinetic/share/turtlebot_navigation/launch/move_base.launch.xml-->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base">
+  
+    <rosparam file="$(find ras_navigation)/params/costmap_params/costmap_common_params_waffle.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find ras_navigation)/params/costmap_params/costmap_common_params_waffle.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find ras_navigation)/params/costmap_params/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find ras_navigation)/params/costmap_params/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find ras_navigation)/params/move_base_params/move_base_params.yaml" command="load" />
+    <rosparam file="$(find ras_navigation)/params/move_base_params/dwa_local_planner_params.yaml" command="load" />
+  
+  </node>
+
 
   <!-- Laser Filter -->
   <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter">
