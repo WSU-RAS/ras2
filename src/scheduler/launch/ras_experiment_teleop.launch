@@ -5,7 +5,6 @@
     <arg name="use_tablet" default="true" />
     <arg name="use_error" default="true" />
     <arg name="use_camera" default="false" />
-    <arg name="teleop_only" default="true" />
 
     <arg name="save_task" default="false" />
     <arg name="is_test" default="false" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
@@ -15,7 +14,6 @@
     <!-- Parameters -->
     <param name="ras/use_robot" value="$(arg use_robot)" type="bool" />
     <param name="ras/use_tablet" value="$(arg use_tablet)" type="bool" />
-    <param name="ras/teleop_only" value="$(arg teleop_only)" type="bool" />
     <param name="ras/is_test" value="$(arg is_test)" type="bool" />
 
     <!-- Manager -->
