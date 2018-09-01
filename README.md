@@ -55,21 +55,18 @@ start the `poweroff.py` node:
 
     sudo chmod a+s /sbin/poweroff
 
-## Git Submodules
-Clone getting submodules:
+## Git Subtrees
+Cloning repo and its subtrees (ordinary clone):
 
-    git clone --recursive https://github.com/WSU-RAS/ras.git ras
+    git clone https://github.com/WSU-RAS/ras.git ras
 
-Adding a new submodule:
+git subtree commands:
 
-    cd ~/ras/src/
-    git submodule add https://github.com/WSU-RAS/object_detection_msgs.git object_detection_msgs
-    git submodule init
+    git subtree add   -P <prefix> <commit>
+    git subtree add   -P <prefix> <repository> <ref>
+    git subtree pull  -P <prefix> <repository> <ref>
+    git subtree push  -P <prefix> <repository> <ref>
+    git subtree merge -P <prefix> <commit>
+    git subtree split -P <prefix> [OPTIONS] [<commit>]
 
-Updating all submodules to the latest commit on origin:
-
-    git submodule foreach -q --recursive "branch='$(git config -f $toplevel/.gitmodules submodule.$name.branch)'; git fetch origin --tags; git checkout $branch; git pull" && git pull && git submodule update --remote --recursive
-
-Initializing newly added submodules (e.g. somebody else adds one):
-
-    git submodule update --init --recursive
+More information about [git subtrees](https://github.com/git/git/blob/master/contrib/subtree/git-subtree.txt).
