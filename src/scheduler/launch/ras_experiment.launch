@@ -7,7 +7,6 @@
     <arg name="use_camera" default="true" />
     <arg name="teleop_only" default="false" />
 
-    <arg name="save_task" default="false" />
     <arg name="is_test" default="false" /> <!-- if TRUE, log casas data to test agent instead of kyoto -->
     <arg name="use_location" default="false" /> <!-- if FALSE, uses only estimote sensors, TRUE includes ambient sensors -->
     <arg name="new_map" default="false" />
@@ -77,7 +76,6 @@
     <group if="$(arg use_error)">
         <include file="$(find adl_error_detection)/launch/detect_error.launch">
             <arg name="is_test" value="$(arg is_test)" />
-            <arg name="save_task" value="$(arg save_task)" />
             <arg name="use_location" value="$(arg use_location)" />
         </include>
     </group>
