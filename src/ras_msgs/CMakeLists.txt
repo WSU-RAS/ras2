@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -60,6 +61,7 @@ add_message_files(
   Rotate_msg.msg
   SensorPub.msg
   Lurker_base_msg.msg
+  RobotToMapTransformState.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -93,6 +95,7 @@ generate_messages(
   DEPENDENCIES
   actionlib_msgs
   std_msgs
+  geometry_msgs
 )
 
 ################################################
@@ -127,7 +130,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ras_msgs
-  CATKIN_DEPENDS actionlib message_runtime roscpp rospy std_msgs
+  CATKIN_DEPENDS actionlib message_runtime roscpp rospy std_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 
