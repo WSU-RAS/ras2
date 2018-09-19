@@ -68,5 +68,9 @@ git subtree commands:
     git subtree push  -P <prefix> <repository> <ref>
     git subtree merge -P <prefix> <commit>
     git subtree split -P <prefix> [OPTIONS] [<commit>]
+    
+git push (note: might need to pull before pushing):
+
+    git subtree push --prefix=src/adl_error_detection https://github.com/WSU-RAS/adl_error_detection.git master
 
 More information about [git subtrees](https://github.com/git/git/blob/master/contrib/subtree/git-subtree.txt).
