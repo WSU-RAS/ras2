@@ -1,4 +1,3 @@
-TaskId id
 TaskStatus request
 string file
 ---
