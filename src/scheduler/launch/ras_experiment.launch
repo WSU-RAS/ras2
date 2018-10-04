@@ -26,6 +26,7 @@
     <!-- Robot -->
     <group if="$(arg use_robot)">
         <node name="goto" pkg="scheduler" type="goto.py" output="screen" />
+        <node name="goto_navigation" pkg="ras_navigation" type="goto_service.py" output="screen" />
         <node name="find_person_server" pkg="find_person" type="find_person_server.py" output="screen" />
 
         <!--
