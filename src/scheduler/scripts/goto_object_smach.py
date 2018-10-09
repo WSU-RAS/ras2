@@ -3,16 +3,9 @@
 import rospy
 import smach
 import smach_ros
-import time
-import actionlib_msgs
-import actionlib
-
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from actionlib_msgs.msg import GoalStatus
 
 from adl.util import TaskToDag
-#from gotoxy_state import GotoXYState, get_object_location
-from gotoxy_state_seq import GotoXYState, get_object_location, multi_path
+from gotoxy_state_seq import GotoXYState, multi_path
 
 
 class FindObjectState(smach.State):
