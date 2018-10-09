@@ -52,6 +52,7 @@ class Scheduler:
         self.teleop_only = False
         self.is_robot_moving = False
         self.test = True
+        
         if rospy.has_param("ras"):
             ras = rospy.get_param("ras")
             self.use_robot = ras['use_robot']
@@ -103,9 +104,10 @@ class Scheduler:
         # Log system information to CASAS
         rospy.Timer(rospy.Duration(1), self.system_log, oneshot=True)
 
-        #Allow time for casas Logger to get brought up
+        # Allow time for casas Logger to get brought up
         rospy.sleep(1)
 
+        # Begin battery logging
         if self.use_robot or self.teleop_only:
             rospy.Subscriber('/cmd_vel', Twist, self.robot_cmd_vel_cb)
             # Log battery using casas publisher at rate once per 60s

@@ -8,12 +8,10 @@ import actionlib
 from smach import StateMachine
 from smach_ros import SimpleActionState
 
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
+
 from find_person.msg import FindPersonAction, FindPersonGoal
-#from gotoxy_state import GotoXYState, get_object_location
-from gotoxy_state_seq import GotoXYState, get_object_location, multi_path, Goto_points
-from geometry_msgs.msg import Pose, Point, Quaternion
+from gotoxy_state_seq import GotoXYState, multi_path
 from adl.util import Task
 
 class FindPersonState(smach.State):
@@ -23,8 +21,12 @@ class FindPersonState(smach.State):
             self,
             outcomes=['success', 'fail', 'preempted'],
             input_keys=['task_number_in', 'error_step_in'],
-            output_keys=['position_x_out', 'position_y_out', 'orientation_z_out', 'orientation_w_out', 'points_out', 'object_name_out']
-        )
+            output_keys=['position_x_out', 
+                        'position_y_out', 
+                        'orientation_z_out', 
+                        'orientation_w_out', 
+                        'points_out',
+                        'object_name_out'])
         self.rate = rospy.Rate(10)
         self.find_person = actionlib.SimpleActionClient(
             "find_person_server", FindPersonAction)
