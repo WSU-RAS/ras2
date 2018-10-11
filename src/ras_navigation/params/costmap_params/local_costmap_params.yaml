@@ -12,7 +12,7 @@ local_costmap:
 #Costmap params
   static_map: false
   rolling_window: false
-  inflation_radius: 0.5
+  inflation_radius: 0.3
   resolution: 0.1
   map_type: costmap
 

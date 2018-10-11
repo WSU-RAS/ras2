@@ -89,6 +89,32 @@ def multi_path(origin, object_name):
 
     return points
 
+def multi_path_extended(origin, object_name, task_number, step_number):
+    names = []
+
+    # IF start behind table
+    if origin == "base2":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+
+    # IF GOTO HUMAN
+    if (object_name == ""):
+        names.append("h_" + str(task_number) + "_" + str(step_number) )
+
+    # IF GOTO OBJECT    
+    else:
+        names.append(object_name)
+
+    points = []
+    for name in names:
+        result = get_object_location(name)
+        if result is not None:
+            points.append((result[0].x,result[0].y,result[0].z,result[0].w))
+        else:
+            rospy.logwarn("Object "+name+" not found in YAML file or database")
+
+    return points
+
 
 
 def get_object_location(name):
@@ -104,11 +130,8 @@ def get_object_location(name):
     return None
 
 
-
-
 class GotoXYState(smach.State):
 
-    # Effective main
     def __init__(self):
         smach.State.__init__(self,
             outcomes = ['success', 'fail', 'preempted'],
@@ -161,15 +184,27 @@ class GotoXYState(smach.State):
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
+
+        ''' # Due to more hard coded values this does not need to be implemented just yet! #
+        
+        # Add rotation correction
+        #new_pose = rotation_correction(self.pose_seq[self.goal_cnt])
+        # Add collision correction
+        #
+        '''        
         goal.target_pose.pose = self.pose_seq[self.goal_cnt]
         rospy.loginfo("Sending goal pose "+str(self.goal_cnt+1)+" to Action Server")
         rospy.loginfo(str(self.pose_seq[self.goal_cnt]))
         self.move_base.send_goal(goal, self.done_cb, self.active_cb, self.feedback_cb)
 
+        
+    # Effective Main
     def execute(self, userdata):
-        rospy.loginfo("Executing state Goto New Base: "+userdata.object_name_in)
+        rospy.loginfo("Executing Movement: "+userdata.object_name_in)
 
         # Human was not found, so go to a location we should be able to find them
+        ''' 
+        # *** Block comment due to problem reduction by orders of Dr. Cook *** #
         if userdata.object_name_in == "human_notfound":
             object_to_find = ""
 
@@ -198,6 +233,12 @@ class GotoXYState(smach.State):
         else:
             object_to_find = userdata.object_name_in
             points = multi_path(userdata.last_object_in, object_to_find)
+        '''
+
+        # Remove after previous code block is fixed #
+        object_to_find = userdata.object_name_in
+        points = multi_path_extended(userdata.last_object_in, object_to_find, userdata.task_number, userdata.step_number)
+        # End remove block #
 
         userdata.last_object_out = object_to_find
 

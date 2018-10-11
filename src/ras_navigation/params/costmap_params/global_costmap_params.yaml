@@ -11,7 +11,7 @@ global_costmap:
 
 #Costmap params
   static_map: true
-  inflation_radius: 0.5
+  inflation_radius: 0.3
   resolution: 0.1
   map_type: costmap
 

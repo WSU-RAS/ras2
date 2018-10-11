@@ -32,6 +32,15 @@ class GotoServer:
 
         outcome = "error"
 
+        '''
+        elif goal.type == Goal.HUMAN:
+            self.goto_feedback(Status.STARTED, "FIND PERSON SMACH STARTED")
+            rospy.loginfo("Initiating FindPerson State Machine")
+            sm = FindPersonSMACH(last_object=self.last_object)
+            outcome = sm.execute(
+                task_number=goal.task_number, error_step=goal.error_step)
+        '''
+
         if goal.type == Goal.BASE:
             self.goto_feedback(Status.STARTED, "GO TO BASE SMACH STARTED")
             rospy.loginfo("Initiating GotoBase State Machine")
@@ -40,15 +49,9 @@ class GotoServer:
                 task_number=goal.task_number,
                 error_step=goal.error_step, base=True)
 
-        elif goal.type == Goal.HUMAN:
-            self.goto_feedback(Status.STARTED, "FIND PERSON SMACH STARTED")
-            rospy.loginfo("Initiating FindPerson State Machine")
-            sm = FindPersonSMACH(last_object=self.last_object)
-            outcome = sm.execute(
-                task_number=goal.task_number, error_step=goal.error_step)
-
-        elif goal.type == Goal.OBJECT:
-            self.goto_feedback(Status.STARTED, "GO TO OBJECT SMACH STARTED")
+        #elif (goal.type == Goal.OBJECT or goal.type == Goal.HUMAN):
+        else:
+            self.goto_feedback(Status.STARTED, "GO TO OBJECT SMACH (and human) STARTED")
             rospy.loginfo("Initiating GotoObject State Machine")
             sm = GotoObjectSMACH(last_object=self.last_object)
             outcome = sm.execute(
