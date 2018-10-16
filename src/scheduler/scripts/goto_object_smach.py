@@ -11,7 +11,6 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
 from adl.util import TaskToDag
-#from gotoxy_state import GotoXYState, get_object_location
 from gotoxy_state_seq import GotoXYState, get_object_location, multi_path
 
 
@@ -21,7 +20,7 @@ class FindObjectState(smach.State):
         smach.State.__init__(
             self,
             outcomes=['success', 'fail'],
-            input_keys=['task_number_in', 'error_step_in', 'base_in'],
+            input_keys=['task_number_in', 'error_step_in', 'base_in', 'human_in'],
             output_keys=['position_x_out', 'position_y_out',
                          'orientation_z_out', 'orientation_w_out', 'points_out',
                          'object_name_out']
@@ -51,7 +50,8 @@ class FindObjectState(smach.State):
             elif userdata.task_number_in == 2 and userdata.error_step_in == 6:
                 object_to_find = 'base3'
 
-
+        elif userdata.human_in == True:
+            object_to_find = 'h_' + str(userdata.task_number_in) + '_' + str(userdata.error_step_in)
         else:
             object_to_find = TaskToDag.mapping[userdata.task_number_in][1 if self.use_location else 0].subtask_info[userdata.error_step_in][1]
 
@@ -72,11 +72,12 @@ class GotoObjectSMACH():
     def __init__(self, last_object):
         GotoObjectSMACH.last_object = last_object
 
-    def execute(self, task_number, error_step, base):
+    def execute(self, task_number, error_step, base,human):
         sm = smach.StateMachine(outcomes=['finish', 'error'])
         sm.userdata.task_number = task_number
         sm.userdata.error_step = error_step
         sm.userdata.base = base
+        sm.userdata.human = human
         sm.userdata.sm_last_object = GotoObjectSMACH.last_object
         sm.userdata.sm_points = []
         sm.userdata.sm_object_name = ""
@@ -92,6 +93,7 @@ class GotoObjectSMACH():
                     'task_number_in': 'task_number',
                     'error_step_in': 'error_step',
                     'base_in': 'base',
+                    'human_in': 'human',
                     'points_out': 'sm_points',
                     'object_name_out' : 'sm_object_name'
                     }
