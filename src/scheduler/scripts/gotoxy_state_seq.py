@@ -17,65 +17,39 @@ from adl.util import Task
 #Logic for figuring out which points to use
 def multi_path(origin, object_name):
     names = []
+
     '''
-    #  base1 -> base2
-    if (origin == "base1" and object_name == "base2"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-
-    #  base1 -> base3
-    elif (origin == "base1" and object_name == "base3"):
-        names.append('b1_b3_1')
-
-    #  base2 -> base1
-    elif (origin == "base2" and object_name == "base1"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append('b2_b1_3')
-
-    #  base2 -> base3
-    elif (origin == "base2" and object_name == "base3"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-        names.append('b1_b3_1')
-
-    #  base3 -> base1
-    elif (origin == "base3" and object_name == "base1"):
-        names.append('b2_b1_3')
-
-    #  base3 -> base2
-    elif (origin == "base3" and object_name == "base2"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-
-    #stupid plant (plant on smaller table next to base2)
-    #Navigate around if it is not at base2 (since base2 is already there)
-    elif ( origin != "base2" and object_name == "plantside"):
-        names.append('b1_b2_1')
-        names.append('b1_b2_2')
-        names.append('b1_b2_3')
-    
-    # navigate to the pillbottle if the robot starts from table
-    #elif (origin != "base2" and object_name == "pillbottle"):
-    #    names.append('universal_kitchen')
-    
-    # *** REALY BAD IDEA *** #
-    # Navigate to universal point if not at base2
-    #elif (origin != "base2"):
-    #    names.append('b1_b2_1')
-
-    #Objects
-    elif (origin == "base2"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
-
-    # *** REALY BAD IDEA DONT DO THIS *** #
-    # If all else fails, send it to uni
-    #else:
-    #    names.append('b1_b2_1')
+    #Walk Dog
+    if object_name == "h_2_0":
+    if object_name == "h_2_1":
+    if object_name == "h_2_2":
     '''
+
+    # Take Meds
+    if object_name == "h_1_1":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+
+    if object_name == "h_1_3":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+
+    if object_name == "h_1_6":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+    # Water Plants
+    if object_name == "h_0_1":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+
+    if object_name == "h_0_2":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+
+    if object_name == "h_0_3":
+        names.append('b2_b1_1')
+        names.append('b2_b1_2')
+    
     #Append actual goal object to goal_names_list, unless it is empty (incase of human)
     if (object_name != ""):
         names.append(object_name)
