@@ -17,7 +17,7 @@ from adl.util import Task
 #Logic for figuring out which points to use
 def multi_path(origin, object_name):
     names = []
-
+    '''
     #  base1 -> base2
     if (origin == "base1" and object_name == "base2"):
         names.append('b1_b2_1')
@@ -75,7 +75,7 @@ def multi_path(origin, object_name):
     # If all else fails, send it to uni
     #else:
     #    names.append('b1_b2_1')
-
+    '''
     #Append actual goal object to goal_names_list, unless it is empty (incase of human)
     if (object_name != ""):
         names.append(object_name)

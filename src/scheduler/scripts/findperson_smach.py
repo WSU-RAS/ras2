@@ -12,7 +12,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from find_person.msg import FindPersonAction, FindPersonGoal
 #from gotoxy_state import GotoXYState, get_object_location
-from gotoxy_state_seq import GotoXYState, get_object_location, multi_path, Goto_points
+from gotoxy_state_seq import GotoXYState, get_object_location, multi_path
 from geometry_msgs.msg import Pose, Point, Quaternion
 from adl.util import Task
 

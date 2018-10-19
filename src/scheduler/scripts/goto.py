@@ -9,7 +9,7 @@ from adl.util import Goal, Task
 import smach_ros
 import smach
 
-from findperson_smach import FindPersonSMACH
+#from findperson_smach import FindPersonSMACH
 from goto_object_smach import GotoObjectSMACH
 
 from adl.util import Goal, Status
@@ -28,18 +28,11 @@ class GotoServer:
     def goto_execute(self, goal):
         rospy.loginfo("Executing {} for {}".format(
             Goal.types[goal.type], Task.types[goal.task_number]))
+        rospy.loginfo("task_number={}".format(goal.task_number))
         rospy.loginfo("error_step={}  error_object={}".format(
             goal.error_step, goal.error_object))
 
         outcome = "error"
-
-        if goal.type == Goal.BASE:
-            self.goto_feedback(Status.STARTED, "GO TO BASE SMACH STARTED")
-            rospy.loginfo("Initiating GotoBase State Machine")
-            sm = GotoObjectSMACH(last_object=self.last_object)
-            outcome = sm.execute(
-                task_number=goal.task_number,
-                error_step=goal.error_step, base=True)
         '''
         elif goal.type == Goal.HUMAN:
             self.goto_feedback(Status.STARTED, "FIND PERSON SMACH STARTED")
@@ -49,7 +42,16 @@ class GotoServer:
                 task_number=goal.task_number, error_step=goal.error_step)
         '''
 
-        elif goal.type == Goal.OBJECT or goal.type == Goal.HUMAN:
+        if goal.type == Goal.BASE:
+            self.goto_feedback(Status.STARTED, "GO TO BASE SMACH STARTED")
+            rospy.loginfo("Initiating GotoBase State Machine")
+            sm = GotoObjectSMACH(last_object=self.last_object)
+            outcome = sm.execute(
+                task_number=goal.task_number,
+                error_step=goal.error_step, base=True, human=False)
+
+        #elif goal.type == Goal.OBJECT or goal.type == Goal.HUMAN:
+        else:
             self.goto_feedback(Status.STARTED, "GO TO OBJECT SMACH STARTED")
             rospy.loginfo("Initiating GotoObject State Machine")
             hum = None
