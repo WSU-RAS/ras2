@@ -84,11 +84,14 @@ function playSound(audioURL) {
 function getBasename() {
     // Kyoto connection too slow, so we host them on a local server there
     var basename;
+    /*
     if (window.location.hostname == "wsu-ras-joule.kyoto.local") {
         basename = 'http://kyoto.kyoto.local/'
     } else {
         basename = 'http://casas.wsu.edu/smarthomestats/'
     }
+    */
+    basename = 'http://kyoto.kyoto.local/'
     return basename;
 }
 
