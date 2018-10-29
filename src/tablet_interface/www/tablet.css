@@ -30,9 +30,11 @@ button[type="button"] {
     outline: 0;
     color: white;
     margin: 5px;
-    padding: 20px 100px;
+    padding: 20px 50px;
     width: 100%;
+    height: 200px;
     background: DodgerBlue;
     box-shadow: none;
     border-radius: 0px;
+    font-size: 75px;
 }

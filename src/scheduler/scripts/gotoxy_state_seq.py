@@ -62,6 +62,11 @@ def multi_path(origin, object_name):
         else:
             rospy.logwarn("Object "+name+" not found in YAML file or database")
 
+    if len(points) == 0:
+        rospy.logwarn("gotoxy: No points sent to goto")
+        rospy.logwarn("gotoxy: Executing go to origin")
+        points.append((0,0,0,1))
+
     return points
 
 
