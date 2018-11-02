@@ -49,7 +49,7 @@ def multi_path(origin, object_name):
     if object_name == "h_0_3":
         names.append('b2_b1_1')
         names.append('b2_b1_2')
-    
+
     #Append actual goal object to goal_names_list, unless it is empty (incase of human)
     if (object_name != ""):
         names.append(object_name)
