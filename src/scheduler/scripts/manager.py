@@ -4,6 +4,7 @@ import rospy
 import rospkg
 import math
 import git, giturlparse
+import multiprocessing
 
 from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
@@ -22,7 +23,7 @@ import tf
 from tf import TransformListener
 from tf.transformations import euler_from_quaternion
 from collections import namedtuple
-from threading import Lock
+from threading import Timer
 
 Transformation = namedtuple('Transformation', ['x', 'y', 'z'])
 Rotation = namedtuple('Rotation', ['roll', 'pitch', 'yaw'])
@@ -94,12 +95,25 @@ class Scheduler:
             self.is_robot_moving = False
 
         self.do_error.start()
-        rospy.on_shutdown(self.shutdown)
-
+        
         # Initiates CASAS loggers
-        rospy.Timer(rospy.Duration(0.01), self.casas_logging_0, oneshot=True)
-        rospy.Timer(rospy.Duration(0.01), self.casas_logging_1, oneshot=True)
-        rospy.Timer(rospy.Duration(0.01), self.casas_logging_2, oneshot=True)
+        self.casas_0 = multiprocessing.Queue()
+        self.casas_1 = multiprocessing.Queue()
+        self.casas_2 = multiprocessing.Queue()
+
+        self.casas_log_0 = multiprocessing.Process(target=self.casas_logging, args=('2', self.casas_0, self.test, rospy))
+        self.casas_log_1 = multiprocessing.Process(target=self.casas_logging, args=('3', self.casas_1, self.test, rospy))
+        self.casas_log_2 = multiprocessing.Process(target=self.casas_logging, args=('4', self.casas_2, self.test, rospy))
+
+        self.casas_log_0.daemon = True
+        self.casas_log_1.daemon = True
+        self.casas_log_2.daemon = True
+
+        self.casas_log_0.start()
+        self.casas_log_1.start()
+        self.casas_log_2.start()
+
+        rospy.on_shutdown(self.shutdown)
 
         # Log system information to CASAS
         rospy.Timer(rospy.Duration(1), self.system_log, oneshot=True)
@@ -113,41 +127,25 @@ class Scheduler:
             rospy.Timer(rospy.Duration(2), self.robot_location_cb, oneshot=True)
         rospy.Timer(rospy.Duration(2), self.heartbeat_cb, oneshot=True)
 
-    def casas_logging_0(self, event):
+    def casas_logging(self, agent_num, queue, test, rospy):
         # CASAS Logging
-        self.casas_0_lock = Lock()
-        self.casas_0 = PublishToCasas(
-            agent_num='2', node='ROS_Node_'+rospy.get_name()[1:]+'_2',
-            test=self.test) # use the test agent instead of kyoto if true
+        rospy.loginfo("Creating casas logger {}".format(agent_num))
+        casas = PublishToCasas(
+            agent_num=agent_num, node='ROS_Node_' + rospy.get_name()[1:] + '_' + agent_num,
+            test=test) # use the test agent instead of kyoto if true
         try:
-            self.casas_0.connect()
-        finally:
-            rospy.signal_shutdown("Cannot connect to CASAS (user 2)! Need to restart.")
-            self.casas_0.finish()
+            t = Timer(0.01, casas.connect)
+            t.start()
+            rospy.sleep(1)
 
-    def casas_logging_1(self, event):
-        # CASAS Logging
-        self.casas_1_lock = Lock()
-        self.casas_1 = PublishToCasas(
-            agent_num='3', node='ROS_Node_'+rospy.get_name()[1:]+'_3',
-            test=self.test) # use the test agent instead of kyoto if true
-        try:
-            self.casas_1.connect()
+            while True:
+                if not queue.empty():
+                    casas.publish(**queue.get())
+                else:
+                    rospy.sleep(0.0001)
         finally:
-            rospy.signal_shutdown("Cannot connect to CASAS (user 3)! Need to restart.")
-            self.casas_1.finish()
-
-    def casas_logging_2(self, event):
-        # CASAS Logging
-        self.casas_2_lock = Lock()
-        self.casas_2 = PublishToCasas(
-            agent_num='4', node='ROS_Node_'+rospy.get_name()[1:]+'_4',
-            test=self.test) # use the test agent instead of kyoto if true
-        try:
-            self.casas_2.connect()
-        finally:
-            rospy.signal_shutdown("Cannot connect to CASAS (user 4)! Need to restart.")
-            self.casas_2.finish()
+            rospy.signal_shutdown("Cannot connect to CASAS (user {})! Need to restart.".format(agent_num))
+            casas.finish()
 
     def system_log(self, event):
         rospack = rospkg.RosPack()
@@ -167,26 +165,24 @@ class Scheduler:
             message = '{}'.format(sm.hexsha)
             modules[target] = message
 
-        with self.casas_0_lock:
-            for target in modules.keys():
-                self.casas_0.publish(
-                    package_type='ROS',
-                    sensor_type='Module_Version',
-                    serial=self.mac_address,
-                    target=target,
-                    message=modules[target],
-                    category='system'
-                )
+        for target in modules.keys():
+            self.casas_0.put(dict(
+                package_type='ROS',
+                sensor_type='Module_Version',
+                serial=self.mac_address,
+                target=target,
+                message=modules[target],
+                category='system'))
 
     def shutdown(self):
         if self.is_goto_active and self.use_robot:
             self.goto_client.cancel_goal()
-        with self.casas_0_lock:
-            self.casas_0.finish()
-        with self.casas_1_lock:
-            self.casas_1.finish()
-        with self.casas_2_lock:
-            self.casas_2.finish()
+        self.casas_log_0.terminate()
+        self.casas_log_1.terminate()
+        self.casas_log_2.terminate()
+        self.casas_0.close()
+        self.casas_1.close()
+        self.casas_2.close()
 
     def robot_cmd_vel_cb(self, msg):
         """
@@ -195,26 +191,24 @@ class Scheduler:
         """
         if self.is_robot_moving and msg.linear.x == 0 and msg.angular.z == 0:
             self.is_robot_moving = False
-            with self.casas_1_lock:
-                self.casas_1.publish(
-                    package_type='ROS',
-                    sensor_type='ROS_Moving',
-                    serial=self.mac_address,
-                    target='ROS_Moving',
-                    message='STILL',
-                    category='state'
-                )
+            self.casas_1.put(dict(
+                package_type='ROS',
+                sensor_type='ROS_Moving',
+                serial=self.mac_address,
+                target='ROS_Moving',
+                message='STILL',
+                category='state'
+            ))
         elif not self.is_robot_moving and (msg.linear.x != 0 or msg.angular.z != 0):
             self.is_robot_moving = True
-            with self.casas_1_lock:
-                self.casas_1.publish(
-                    package_type='ROS',
-                    sensor_type='ROS_Moving',
-                    serial=self.mac_address,
-                    target='ROS_Moving',
-                    message='MOVING',
-                    category='state'
-                )
+            self.casas_1.put(dict(
+                package_type='ROS',
+                sensor_type='ROS_Moving',
+                serial=self.mac_address,
+                target='ROS_Moving',
+                message='MOVING',
+                category='state'
+            ))
 
     def get_robot_location(self):
         t, r = None, None
@@ -236,18 +230,17 @@ class Scheduler:
         trans, rot = self.get_robot_location()
         if trans != None and rot != None:
             degrees = (rot.yaw * 180./math.pi)
-            with self.casas_2_lock:
-                self.casas_2.publish(
-                    package_type='ROS',
-                    sensor_type='ROS_XYR',
-                    serial=self.mac_address,
-                    target='ROS_XYR',
-                    message={
-                        'x':'{0:.3f}'.format(trans.x),
-                        'y':'{0:.3f}'.format(trans.y),
-                        'rotation':'{0:.3f}'.format(degrees)},
-                    category='state'
-                )
+            self.casas_2.put(dict(
+                package_type='ROS',
+                sensor_type='ROS_XYR',
+                serial=self.mac_address,
+                target='ROS_XYR',
+                message={
+                    'x':'{0:.3f}'.format(trans.x),
+                    'y':'{0:.3f}'.format(trans.y),
+                    'rotation':'{0:.3f}'.format(degrees)},
+                category='state'
+            ))
 
     def robot_location_cb(self, event):
         r = rospy.Rate(1) # 1hz
@@ -262,33 +255,30 @@ class Scheduler:
     def heartbeat_cb(self, event):
         while not rospy.is_shutdown():
             try:
-                with self.casas_0_lock:
-                    self.casas_0.publish(
-                        package_type='ROS',
-                        sensor_type='ROS_manager_heartbeat_0',
-                        serial=self.mac_address,
-                        target='ROS_manager_heartbeat_0',
-                        message='OK',
-                        category='state'
-                    )
-                with self.casas_1_lock:
-                    self.casas_1.publish(
-                        package_type='ROS',
-                        sensor_type='ROS_manager_heartbeat_1',
-                        serial=self.mac_address,
-                        target='ROS_manager_heartbeat_1',
-                        message='OK',
-                        category='state'
-                    )
-                with self.casas_2_lock:
-                    self.casas_2.publish(
-                        package_type='ROS',
-                        sensor_type='ROS_manager_heartbeat_2',
-                        serial=self.mac_address,
-                        target='ROS_manager_heartbeat_2',
-                        message='OK',
-                        category='state'
-                    )
+                self.casas_0.put(dict(
+                    package_type='ROS',
+                    sensor_type='ROS_manager_heartbeat_0',
+                    serial=self.mac_address,
+                    target='ROS_manager_heartbeat_0',
+                    message='OK',
+                    category='state'
+                ))
+                self.casas_1.put(dict(
+                    package_type='ROS',
+                    sensor_type='ROS_manager_heartbeat_1',
+                    serial=self.mac_address,
+                    target='ROS_manager_heartbeat_1',
+                    message='OK',
+                    category='state'
+                ))
+                self.casas_2.put(dict(
+                    package_type='ROS',
+                    sensor_type='ROS_manager_heartbeat_2',
+                    serial=self.mac_address,
+                    target='ROS_manager_heartbeat_2',
+                    message='OK',
+                    category='state'
+                ))
                 rospy.sleep(5)
             except KeyboardInterrupt:
                 break
@@ -315,15 +305,14 @@ class Scheduler:
         Log robot's battery in voltage to CASAS
         """
         if self.battery_voltage != None:
-            with self.casas_0_lock:
-                self.casas_0.publish(
-                    package_type='ROS',
-                    sensor_type='ROS_Battery',
-                    serial=self.mac_address,
-                    target='ROS_Battery',
-                    message='{0:.3f}'.format(self.battery_voltage),
-                    category='state'
-                )
+            self.casas_0.put(dict(
+                package_type='ROS',
+                sensor_type='ROS_Battery',
+                serial=self.mac_address,
+                target='ROS_Battery',
+                message='{0:.3f}'.format(self.battery_voltage),
+                category='state'
+            ))
 
     def do_error_execute(self, goal):
         """
@@ -478,15 +467,14 @@ class Scheduler:
         self.do_error_feedback(Status.INPROGRESS, "TABLET MESSAGE {}".format(response))
 
         if response in ['yes', 'no', 'complete', 'goto', 'watchstep', 'watchfull']:
-            with self.casas_0_lock:
-                self.casas_0.publish(
-                    package_type='ROS_Tablet',
-                    sensor_type='ROS_Tablet_Button',
-                    serial='ROS_Tablet',
-                    target='ROS_Tablet_Button',
-                    message={'action':'PRESSED', 'id':response},
-                    category='entity'
-                )
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Button',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Button',
+                message={'action':'PRESSED', 'id':response},
+                category='entity'
+            ))
 
         if response == "no" or response == "complete":
             self.is_error_corrected = True
@@ -500,39 +488,36 @@ class Scheduler:
                 rospy.loginfo("manager: Robot would go back to base at this time")
 
         elif response == 'watchstep':
-            with self.casas_0_lock:
-                self.casas_0.publish(
-                    package_type='ROS_Tablet',
-                    sensor_type='ROS_Tablet_Video',
-                    serial='ROS_Tablet',
-                    target='ROS_Tablet_Video',
-                    message={'action':'BEGIN', 'id':response, 'video':self.video_step_url},
-                    category='state'
-                )
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'BEGIN', 'id':response, 'video':self.video_step_url},
+                category='state'
+            ))
             self.watch_video_url = self.video_step_url
 
         elif response == 'watchfull':
-            with self.casas_0_lock:
-                self.casas_0.publish(
-                    package_type='ROS_Tablet',
-                    sensor_type='ROS_Tablet_Video',
-                    serial='ROS_Tablet',
-                    target='ROS_Tablet_Video',
-                    message={'action':'BEGIN', 'id':response, 'video':self.video_full_url},
-                    category='state'
-                )
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'BEGIN', 'id':response, 'video':self.video_full_url},
+                category='state'
+            ))
             self.watch_video_url = self.video_full_url
 
         elif response == "videodone":
-            with self.casas_0_lock:
-                self.casas_0.publish(
-                    package_type='ROS_Tablet',
-                    sensor_type='ROS_Tablet_Video',
-                    serial='ROS_Tablet',
-                    target='ROS_Tablet_Video',
-                    message={'action':'END', 'id':response, 'video':self.watch_video_url},
-                    category='state'
-                )
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'END', 'id':response, 'video':self.watch_video_url},
+                category='state'
+            ))
             self.watch_video_url = ""
             # Return to the options screen
             self.tablet_setup("options")

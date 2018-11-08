@@ -8,7 +8,9 @@ import configparser
 import yaml
 import math
 import sys
+import multiprocessing
 
+from threading import Timer
 from datetime import datetime
 from collections import deque
 from actionlib import SimpleActionClient
@@ -79,18 +81,30 @@ class ErrorDetector:
         self.rcon.l.addHandler(ConnectPythonLoggingToRos())
         self.casas_setup_exchange()
 
-        rospy.Timer(rospy.Duration(.01), self.casas_logging, oneshot=True)
+        self.casas = multiprocessing.Queue()
+        self.casas_log = multiprocessing.Process(target=self.casas_logging, args=('1', self.casas, self.test or self.test_error, rospy))
+        self.casas_log.daemon = True
+        self.casas_log.start()
 
-    def casas_logging(self, event):
+    def casas_logging(self, agent_num, queue, test, rospy):
         # CASAS Logging
-        self.casas = PublishToCasas(
-            agent_num='1', node='ROS_Node_'+rospy.get_name()[1:],
-            test=self.test or self.test_error) # use the test agent instead of kyoto if true
+        rospy.loginfo("Creating casas logger {}".format(agent_num))
+        casas = PublishToCasas(
+            agent_num=agent_num, node='ROS_Node_' + rospy.get_name()[1:] + '_' + agent_num,
+            test=test) # use the test agent instead of kyoto if true
         try:
-            self.casas.connect()
+            t = Timer(0.01, casas.connect)
+            t.start()
+            rospy.sleep(1)
+
+            while True:
+                if not queue.empty():
+                    casas.publish(**queue.get())
+                else:
+                    rospy.sleep(0.0001)
         finally:
-            rospy.signal_shutdown("Cannot connect to CASAS! Need to restart.")
-            self.casas.finish()
+            rospy.signal_shutdown("Cannot connect to CASAS (user {})! Need to restart.".format(agent_num))
+            casas.finish()
 
     def task_setup(self, task_num=-1, status=TaskStatus.PENDING, text="PENDING"):
         self.task_number = task_num
@@ -161,7 +175,7 @@ class ErrorDetector:
     def __error_correction_active_cb(self):
         self.task_pause = True
         self.task_status.text = "ERROR CORRECTION STARTED"
-        self.casas.publish(
+        self.casas.put(dict(
             package_type='ROS',
             sensor_type='ROS_Task_Step_Error',
             serial=self.mac_address,
@@ -172,7 +186,7 @@ class ErrorDetector:
                 'error_step':str(self.error_step),
                 'error_id':self.error_key},
             category='state'
-        )
+        ))
 
     def __error_correction_done_cb(self, terminal_state, result):
         result_bool = (result.status == Status.COMPLETED)
@@ -180,7 +194,7 @@ class ErrorDetector:
             self.task_status.text = "ERROR CORRECTION SUCCEEDED"
             rospy.loginfo("error_detector: do_error correction succeeded")
             self.__correct_sequence()
-            self.casas.publish(
+            self.casas.put(dict(
                 package_type='ROS',
                 sensor_type='ROS_Task_Step_Error',
                 serial=self.mac_address,
@@ -191,13 +205,13 @@ class ErrorDetector:
                     'error_step':str(self.error_step),
                     'error_id':self.error_key},
                 category='state'
-            )
+            ))
             if self.test_error:
                 self.pause_dummy_data(False)
         elif terminal_state == GoalStatus.SUCCEEDED and result.status == Status.FAILED:
             self.task_status.text = "ERROR CORRECTION FAILED"
             rospy.logerr("error_detector: do_error correction failed")
-            self.casas.publish(
+            self.casas.put(dict(
                 package_type='ROS',
                 sensor_type='ROS_Task_Step_Error',
                 serial=self.mac_address,
@@ -207,7 +221,7 @@ class ErrorDetector:
                     'error_step':str(self.error_step),
                     'task':Task.types[self.current_task_number]},
                 category='state'
-            )
+            ))
         else:
             rospy.logwarn("error_detector: do_error preempted or cancelled")
 
@@ -223,7 +237,7 @@ class ErrorDetector:
             if self.task_pause and self.do_error.get_state() == GoalStatus.ACTIVE:
                 self.do_error.cancel_goal()
                 rospy.logwarn("error_detector: do_error correction cancelled")
-                self.casas.publish(
+                self.casas.put(dict(
                     package_type='ROS',
                     sensor_type='ROS_Task_Step_Error',
                     serial=self.mac_address,
@@ -233,7 +247,7 @@ class ErrorDetector:
                         'error_step':str(self.error_step),
                         'task':Task.types[self.current_task_number]},
                     category='state'
-                )
+                ))
 
     def task_controller(self, request):
         response = TaskStatus(
@@ -251,14 +265,14 @@ class ErrorDetector:
                 self.current_task_number = request.id.task_number
                 self.current_location = 'L'
                 rospy.loginfo("error_detector: {}=START".format(Task.types[self.current_task_number]))
-                self.casas.publish(
+                self.casas.put(dict(
                     package_type='ROS',
                     sensor_type='ROS_Task',
                     serial=self.mac_address,
                     target='ROS_Task',
                     message={'action':'BEGIN', 'task':Task.types[self.current_task_number]},
                     category='state'
-                )
+                ))
                 return TaskControllerResponse(response)
 
             elif self.task_number == request.id.task_number \
@@ -267,14 +281,14 @@ class ErrorDetector:
                 self.stop_error_correction()
                 self.task_setup()
                 rospy.loginfo("error_detector: {}=END".format(Task.types[request.id.task_number]))
-                self.casas.publish(
+                self.casas.put(dict(
                     package_type='ROS',
                     sensor_type='ROS_Task',
                     serial=self.mac_address,
                     target='ROS_Task',
                     message={'action':'END', 'task':Task.types[request.id.task_number]},
                     category='state'
-                )
+                ))
                 return TaskControllerResponse(response)
 
         rospy.logwarn("task request invalid")
@@ -485,7 +499,7 @@ class ErrorDetector:
                 # Check if a new step is completed in the sequence
                 if check_result[2] != check_result[4] and self.last_key != check_result[2] and check_result[1]:
                     self.current_step = TaskToDag.mapping[self.current_task_number][1 if self.use_location else 0].subtask[check_result[2]]
-                    self.casas.publish(
+                    self.casas.put(dict(
                         package_type='ROS',
                         sensor_type='ROS_Task_Step',
                         serial=self.mac_address,
@@ -495,7 +509,7 @@ class ErrorDetector:
                             'step':str(self.current_step),
                             'id':check_result[2]},
                         category='state'
-                    )
+                    ))
                     rospy.loginfo('{}{} Task --- step {}: {} completed{}'.format(bcolors.OKGREEN, Task.types[self.current_task_number], self.current_step, check_result[2], bcolors.ENDC))
                     rospy.loginfo("{}next step: {}{}".format(bcolors.OKBLUE, check_result[4], bcolors.ENDC))
                     # NEW: exclude completed sequence
@@ -592,7 +606,9 @@ class ErrorDetector:
     def stop(self):
         rospy.loginfo("error_detector: disconnecting casas connection")
         self.rcon.stop()
-        self.casas.finish()
+        self.casas_log.terminate()
+        self.casas.close()
+        
 
 
 if __name__ == "__main__":
