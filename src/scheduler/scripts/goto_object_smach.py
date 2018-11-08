@@ -44,13 +44,15 @@ class FindObjectState(smach.State):
                 object_to_find = 'base2'
 
             # if the task is walk the dog then the base is BASE1
-            elif userdata.task_number_in == 2:
-                object_to_find = 'base1'
+            #elif userdata.task_number_in == 2:
+            else:               
+               object_to_find = 'base1'
 
             # if the task is walk the dog and error step is take the leash then the base is BASE3
+            '''
             elif userdata.task_number_in == 2 and userdata.error_step_in == 6:
                 object_to_find = 'base3'
-
+            '''
 
         else:
             object_to_find = TaskToDag.mapping[userdata.task_number_in][1 if self.use_location else 0].subtask_info[userdata.error_step_in][1]

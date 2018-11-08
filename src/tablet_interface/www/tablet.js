@@ -89,6 +89,7 @@ function getBasename() {
     } else {
         basename = 'http://casas.wsu.edu/smarthomestats/'
     }
+    basename = 'http://kyoto.kyoto.local/'
     return basename;
 }
 

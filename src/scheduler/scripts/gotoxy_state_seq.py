@@ -121,7 +121,6 @@ def multi_path(origin, object_name):
     #stupid plant (plant on smaller table next to base2)
     #Navigate around if it is not at base2 (since base2 is already there)
     elif ( origin != "base2" and object_name == "plantside"):
-        names.append('b1_b2_1')
         names.append('b1_b2_2')
         names.append('b1_b2_3')
     
@@ -135,9 +134,9 @@ def multi_path(origin, object_name):
     #    names.append('b1_b2_1')
 
     #Objects
-    elif (origin == "base2"):
-        names.append('b2_b1_1')
-        names.append('b2_b1_2')
+    #elif (origin == "base2"):
+        #names.append('b2_b1_1')
+        #names.append('b2_b1_2')
 
     # *** REALY BAD IDEA DONT DO THIS *** #
     # If all else fails, send it to uni
@@ -240,15 +239,21 @@ class GotoXYState(smach.State):
 
             # walk dog task
             if userdata.task_number_in == Task.WALK_DOG:
-                if userdata.error_step_in in [1, 2, 3, 4]:
+                if userdata.error_step_in in [0, 1, 2, 3, 4]:
                     object_to_find = 'entryway'
+            # Taking meds
+            if userdata.task_number_in == Task.TAKE_MEDS:
+                if userdata.error_step_in in [0]:
+                  object_to_find = 'universal_kitchen'
             # watering the plants
             elif userdata.task_number_in == Task.WATER_PLANTS:
                 # error step in filling
-                if userdata.error_step_in == 1:
-                    object_to_find = 'kitchen'
+                if userdata.error_step_in in [1,2]:
+                    object_to_find = 'rebase_watercan'
+                elif userdata.error_step_in in [3]:
+                    object_to_find = 'universal_kitchen'
             else:
-                rospy.loginfo("GotoXYNewBase doesn't know where to go: "+userdata.object_name_in)
+                rospy.loginfo("GotoXYNewBase doesn't know where to go: "+ userdata.object_name_in)
                 return "fail"
 
             points = multi_path(userdata.last_object_in, object_to_find)
