@@ -195,28 +195,28 @@ function respondAudioDone() {
 }
 
 // Selecting buttons
-document.getElementById("buttonYes").onclick = function() {
+document.getElementById("buttonYes").onmousedown = function() {
     respondChoice(true);
 }
-document.getElementById("buttonNo").onclick = function() {
+document.getElementById("buttonNo").onmousedown = function() {
     respondChoice(false);
 }
-document.getElementById("buttonVideoFull").onclick = function() {
+document.getElementById("buttonVideoFull").onmousedown = function() {
     respondOptions("watchfull");
 }
-document.getElementById("buttonVideoStep").onclick = function() {
+document.getElementById("buttonVideoStep").onmousedown = function() {
     respondOptions("watchstep");
 }
-document.getElementById("buttonGoTo").onclick = function() {
+document.getElementById("buttonGoTo").onmousedown = function() {
     respondOptions("goto");
     playSound('resources/follow-me.mp3');
 }
-document.getElementById("buttonComplete").onclick = function() {
+document.getElementById("buttonComplete").onmousedown = function() {
     respondOptions("complete");
     showDefault(true); // Show happy face
     playSound('resources/okay-thank-you.mp3');
 }
-document.getElementById("buttonInit").onclick = function() {
+document.getElementById("buttonInit").onmousedown = function() {
     showDefault(false);
     
     // This appears to fix the not playing on first call problem
