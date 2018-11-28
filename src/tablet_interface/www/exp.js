@@ -103,7 +103,7 @@ document.getElementById("gotoBase").onclick = function() {
     gotoBase();
 }
 document.getElementById("poweroff").onclick = function() {
-    poweroff();
+    //poweroff();
 }
 
 
