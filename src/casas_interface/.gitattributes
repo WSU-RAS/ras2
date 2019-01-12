@@ -1,1 +1,1 @@
-src/casas.cfg filter=git-crypt-casas_key diff=git-crypt-casas_key
+src/* filter=git-crypt-casas_key diff=git-crypt-casas_key
