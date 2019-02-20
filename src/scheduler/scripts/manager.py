@@ -5,12 +5,14 @@ import rospkg
 import math
 import git, giturlparse
 import multiprocessing
+import json
 
 from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
 from ras_msgs.msg import GotoAction, GotoGoal
 from ras_msgs.msg import DoErrorAction, DoErrorFeedback, DoErrorResult
 from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
+from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 from turtlebot3_msgs.msg import SensorState
 from tablet_interface.srv import Tablet
@@ -18,6 +20,8 @@ from tablet_interface.srv import Tablet
 from adl.util import Task, Goal, Status
 from adl.util import get_mac
 from casas.publish import PublishToCasas
+
+from ras_msgs.msg import DoErrorAction, DoErrorGoal
 
 import tf
 from tf import TransformListener
@@ -41,6 +45,7 @@ class Scheduler:
         self.video_full_url = ""
         self.watch_video_url = ""
 
+        self.running = False
         self.mac_address = get_mac()
         self.is_goto_active = False
         self.goto_success = False
@@ -65,10 +70,14 @@ class Scheduler:
             adl = rospy.get_param("adl")
             self.test_error = adl['test_error']
             self.use_location = adl['use_location']
+        # Replaced by subscriber
+        
         self.do_error = SimpleActionServer(
             'do_error', DoErrorAction,
             execute_cb=self.do_error_execute,
             auto_start=False)
+        self.do_error.start()
+        
 
         # Called from the tablet when we want to go to a particular object
         # This then forwards it to our Go To node via the self.goto_client
@@ -94,8 +103,6 @@ class Scheduler:
 
             self.is_robot_moving = False
 
-        self.do_error.start()
-        
         # Initiates CASAS loggers
         self.casas_0 = multiprocessing.Queue()
         self.casas_1 = multiprocessing.Queue()
@@ -126,6 +133,52 @@ class Scheduler:
             self.tf = TransformListener()
             rospy.Timer(rospy.Duration(2), self.robot_location_cb, oneshot=True)
         rospy.Timer(rospy.Duration(2), self.heartbeat_cb, oneshot=True)
+
+
+        rospy.sleep(15)
+        self.call_error = SimpleActionClient('do_error', DoErrorAction)
+        self.call_error_connected = True
+        if not self.call_error.wait_for_server(rospy.Duration(3)):
+            self.call_error_connected = False
+            rospy.logerr("error_detector: do_error client failed to connect")
+            return
+
+        rospy.Subscriber("casas_sensor", String, self.sensor_listener)
+
+    def sensor_listener(self, data):
+        # Unpack data in dict
+        data = json.loads(data.data)
+
+        goal2 = DoErrorGoal()
+        goal2.task_number = 1
+        goal2.error_step =  1
+    
+        # Filter by appropriate params
+        result = 'eat'
+
+        # Do error logic
+        goal = None
+        if result == 'eat':
+            goal = 1
+        elif result == 'work':
+            goal = 2
+        elif result == 'meds':
+            goal = 3
+        else:
+            goal = -1
+
+        if self.running:
+            return None
+
+        rospy.loginfo('Sensor Found: ' + str(goal))
+
+
+        # Launch error correction 
+        if goal is not -1:
+            self.running = True
+            self.goal = goal
+            self.call_error.send_goal(goal2)
+        
 
     def casas_logging(self, agent_num, queue, test, rospy):
         # CASAS Logging
@@ -314,40 +367,54 @@ class Scheduler:
                 category='state'
             ))
 
+    # New to v2
+    def lookup_tablet(self, goal):
+        obj_name = ''
+        full_url = ''
+        step_url = ''
+
+        # Eat        
+        if goal == 1:
+            obj_name = 'Gernolla Bar'
+            full_url = 'eat.all.mp4'
+            step_url = 'eat.error3.mp4'
+        # Work
+        elif goal == 2:
+            obj_name = 'lappy top'
+            full_url = 'work.all.mp4'
+            step_url = 'work.error1.mp4'
+        # Meds
+        elif goal == 3:
+            obj_name = 'Pills (beans)'
+            full_url = 'takemedicine.all.mp4'
+            step_url = 'takemedicine.error3.mp4'
+               
+        # Error
+        else:
+            print('oh gawd unknown goal x_X')
+
+        return obj_name, step_url, full_url
+
     def do_error_execute(self, goal):
         """
         What to do when error detection calls this action server, when an error
         is detected
         """
-        if self.test_error:
-            # Simulate a do error execution when testing with dummy data
-            self.do_error_feedback(Status.STARTED, "ERROR CORRECTION STARTED")
-            rospy.sleep(5.)
-            self.do_error_feedback(Status.COMPLETED, "ERROR CORRECTION COMPLETED")
-            rospy.sleep(1.)
-            do_error_result = DoErrorResult()
-            do_error_result.status = Status.COMPLETED
-            do_error_result.is_complete = True
-            self.do_error.set_succeeded(do_error_result)
-            return
+
+        goal = self.goal
 
         self.is_error_correction_done = False
         self.is_error_corrected = False
         rospy.loginfo("manager: Executing Do Error")
         self.do_error_feedback(Status.STARTED, "ERROR CORRECTION STARTED")
 
-        self.task_number = goal.task_number
-        self.error_step = goal.error_step
-
-
         # Preprocess to get correct values for the tablet
-        self.object_name, self.video_step_url, self.video_full_url = \
-            TabletData.get_data(self.task_number, self.error_step, self.use_location)
+        self.object_name, self.video_step_url, self.video_full_url = self.lookup_tablet(goal)
 
         # Step ONE:
         # Setup tablet and find the human
         if self.use_tablet:
-            self.tablet_setup("choice")
+            self.tablet_setup("moving")
         self.do_error_feedback(Status.INPROGRESS, "TABLET SETUP COMPLETED")
 
         # Autonomous navigation to human
@@ -389,6 +456,11 @@ class Scheduler:
                 Status.INPROGRESS, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
             rospy.loginfo("manager: Robot would find and go to human at this time")
 
+        # Bring up yes / no
+        if self.use_tablet:
+            self.tablet_setup("choice")
+        self.do_error_feedback(Status.INPROGRESS, "TABLET SETUP COMPLETED")
+
         # Step TWO:
         # Human interacts with tablet human chooses no or task completed
         while not self.is_error_correction_done and self.use_tablet:
@@ -414,6 +486,8 @@ class Scheduler:
         do_error_result.status = complete_status
         do_error_result.is_complete = self.is_error_corrected
         self.do_error.set_succeeded(do_error_result)
+
+        self.running = False
 
     def do_error_feedback(self, status, text):
         """
@@ -751,7 +825,7 @@ class TabletData(object):
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('scheduler')
+        rospy.init_node('scheduler', anonymous=False)
         server = Scheduler()
         rospy.spin()
     except rospy.ROSInterruptException:
