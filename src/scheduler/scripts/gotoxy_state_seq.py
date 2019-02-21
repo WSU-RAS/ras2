@@ -235,26 +235,18 @@ class GotoXYState(smach.State):
 
         # Human was not found, so go to a location we should be able to find them
         if userdata.object_name_in == "human_notfound":
-            object_to_find = ""
+            
+            # Eat
+            if userdata.task_number_in == 1:
+                object_to_find = 'walkway'
 
-            # walk dog task
-            if userdata.task_number_in == Task.WALK_DOG:
-                if userdata.error_step_in in [0, 1, 2, 3, 4]:
-                    object_to_find = 'entryway'
-            # Taking meds
-            if userdata.task_number_in == Task.TAKE_MEDS:
-                if userdata.error_step_in in [0]:
-                  object_to_find = 'universal_kitchen'
-            # watering the plants
-            elif userdata.task_number_in == Task.WATER_PLANTS:
-                # error step in filling
-                if userdata.error_step_in in [1,2]:
-                    object_to_find = 'rebase_watercan'
-                elif userdata.error_step_in in [3]:
-                    object_to_find = 'universal_kitchen'
-            else:
-                rospy.loginfo("GotoXYNewBase doesn't know where to go: "+ userdata.object_name_in)
-                return "fail"
+            # Work
+            if userdata.task_number_in == 2:
+                object_to_find = 'walkway'
+
+            # Meds
+            if userdata.task_number_in == 3:
+                object_to_find = 'kitchen'
 
             points = multi_path(userdata.last_object_in, object_to_find)
 
