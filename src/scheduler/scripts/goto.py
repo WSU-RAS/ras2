@@ -4,7 +4,7 @@ import rospy
 
 from actionlib import SimpleActionServer
 from ras_msgs.msg import GotoAction, GotoFeedback, GotoResult
-from adl.util import Goal, Task
+from adl.util import Goal, Task, Status
 
 import smach_ros
 import smach
@@ -12,7 +12,6 @@ import smach
 from findperson_smach import FindPersonSMACH
 from goto_object_smach import GotoObjectSMACH
 
-from adl.util import Goal, Status
 
 class GotoServer:
 

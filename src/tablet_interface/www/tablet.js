@@ -142,6 +142,10 @@ function showMoving() {
 function showStuck() {
     showOne('default');
     playSound('resources/error.mp3');
+    playSound('resources/error.mp3');
+    playSound('resources/error.mp3');
+    playSound('resources/error.mp3');
+    playSound('resources/error.mp3');
     basename = getBasename();
     document.getElementById("face").src = basename + 'pictures/black_surprised_with_mouth.jpg';
 }

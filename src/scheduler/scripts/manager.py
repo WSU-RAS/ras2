@@ -172,6 +172,8 @@ class Scheduler:
         else:
             goal.task_number = -1
 
+        self.task_number = goal.task_number
+
         if self.running:
             return None
 
@@ -448,7 +450,7 @@ class Scheduler:
 
                 # Display we are stuck :(
                 self.tablet_setup("stuck")
-                rospy.sleep(3)
+                rospy.sleep(6)
 
         # Teleop navigation to human
         elif self.teleop_only:

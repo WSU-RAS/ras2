@@ -235,14 +235,16 @@ class GotoXYState(smach.State):
 
         # Human was not found, so go to a location we should be able to find them
         if userdata.object_name_in == "human_notfound":
-            
+
+            object_to_find = ''
+
             # Eat
             if userdata.task_number_in == 1:
-                object_to_find = 'walkway'
+                object_to_find = 'rebase_watercan'
 
             # Work
             elif userdata.task_number_in == 2:
-                object_to_find = 'walkway'
+                object_to_find = 'rebase_watercan'
 
             # Meds
             elif userdata.task_number_in == 3:
@@ -253,6 +255,7 @@ class GotoXYState(smach.State):
                 rospy.logerr('gotoxy: Unknown task sent!')
                 rospy.logerr('gotoxy: task=' + str(userdata.task_number_in))
 
+            rospy.loginfo('gotoxy: loi:' + userdata.last_object_in + " : " + object_to_find)
             points = multi_path(userdata.last_object_in, object_to_find)
 
         # Human was found, so in FindPersonSMACH we would have found the points
