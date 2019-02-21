@@ -135,7 +135,7 @@ function showChoice() {
 }
 function showMoving() {
     showOne('default');
-    playSound('resources/woods.mp3');
+    playSound('resources/jones.mp3');
     basename = getBasename();
     document.getElementById("face").src = basename + 'pictures/black_happy_without_mouth.jpg';
 }

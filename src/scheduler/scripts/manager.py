@@ -168,7 +168,7 @@ class Scheduler:
         elif result == 'work':
             goal.task_number = 2
         elif result == 'meds':
-            goal.task_number = 3
+            goal.task_number = 0
         else:
             goal.task_number = -1
 
@@ -390,7 +390,7 @@ class Scheduler:
             full_url = 'work.all.mp4'
             step_url = 'work.error1.mp4'
         # Meds
-        elif goal == 3:
+        elif goal == 0:
             obj_name = 'N/A'
             full_url = 'takemedicine.all.mp4'
             step_url = 'takemedicine.error3.mp4'
@@ -450,7 +450,6 @@ class Scheduler:
 
                 # Display we are stuck :(
                 self.tablet_setup("stuck")
-                rospy.sleep(6)
 
         # Teleop navigation to human
         elif self.teleop_only:
@@ -820,7 +819,7 @@ class TabletData(object):
             video_full_url = 'walkdog.all.mp4'
             video_step_url = 'walkdog.error{}.mp4'.format(error_step)
             if error_step == 0:
-                object_to_find = 'umbrella'
+                object_to_find = 'lappy'
             elif error_step == 1:
                 object_to_find = 'leash'
             elif error_step == 2:

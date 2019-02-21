@@ -50,7 +50,7 @@ class FindPersonState(smach.State):
         self.find_person.send_goal(goal, done_cb=self.done_cb)
 
         start_time = rospy.Time.now()
-        timeout = rospy.Duration(secs=60, nsecs=0)
+        timeout = rospy.Duration(secs=5, nsecs=0)
         while self.is_running and rospy.Time.now() - start_time < timeout:
             if self.preempt_requested():
                 self.service_preempt()

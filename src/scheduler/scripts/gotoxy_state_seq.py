@@ -247,7 +247,7 @@ class GotoXYState(smach.State):
                 object_to_find = 'couchway'
 
             # Meds
-            elif userdata.task_number_in == 3:
+            elif userdata.task_number_in == 0:
                 object_to_find = 'kitchenway'
 
             # Error
