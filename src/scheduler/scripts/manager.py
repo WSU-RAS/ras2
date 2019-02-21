@@ -6,6 +6,7 @@ import math
 import git, giturlparse
 import multiprocessing
 import json
+import yaml
 
 from actionlib_msgs.msg import GoalStatus
 from actionlib import SimpleActionServer, SimpleActionClient
@@ -147,11 +148,14 @@ class Scheduler:
 
     def sensor_listener(self, data):
         # Unpack data in dict
-        data = json.loads(data.data)
+        data = yaml.safe_load(data.data)
 
-        goal2 = DoErrorGoal()
-        goal2.task_number = 1
-        goal2.error_step =  1
+        if data['target'] != 'EST315':
+            return None
+
+        goal = DoErrorGoal()
+        goal.task_number = -1
+        goal.error_step =  0
     
         # Filter by appropriate params
         result = 'eat'
@@ -159,25 +163,22 @@ class Scheduler:
         # Do error logic
         goal = None
         if result == 'eat':
-            goal = 1
+            goal.task_number = 1
         elif result == 'work':
-            goal = 2
+            goal.task_number = 2
         elif result == 'meds':
-            goal = 3
+            goal.task_number = 3
         else:
-            goal = -1
+            goal.task_number = -1
 
         if self.running:
             return None
 
-        rospy.loginfo('Sensor Found: ' + str(goal))
-
-
         # Launch error correction 
-        if goal is not -1:
+        if goal.task_number is not -1:
             self.running = True
             self.goal = goal
-            self.call_error.send_goal(goal2)
+            self.call_error.send_goal(goal)
         
 
     def casas_logging(self, agent_num, queue, test, rospy):
@@ -445,7 +446,7 @@ class Scheduler:
                 rospy.logwarn("manager: Experimenter needs to teleop robot to human")
 
                 # Display we are stuck :(
-                self.tablet_setup("moving")
+                self.tablet_setup("stuck")
                 rospy.sleep(3)
 
         # Teleop navigation to human
