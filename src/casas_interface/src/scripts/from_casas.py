@@ -12,6 +12,7 @@ from casas import objects, rabbitmq
 from casas.publish import PublishToCasas
 
 from std_msgs.msg import String
+from ras_msgs.msg import casas_sensor
 
 class Receiver:
 
@@ -23,13 +24,7 @@ class Receiver:
         self.test = False
         self.test_error = False
 
-        self.casas = multiprocessing.Queue()
-        self.casas_log = multiprocessing.Process(target=self.casas_logging, 
-                                                 args=('1', self.casas, False, rospy))
-        self.casas_log.daemon = True
-        self.casas_log.start()
-
-        self.pub = rospy.Publisher('casas_sensor', String, queue_size=10)
+        self.pub = rospy.Publisher('casas_sensor', casas_sensor, queue_size=20)
 
         # CASAS Sensors
         config = configparser.ConfigParser()
@@ -65,10 +60,15 @@ class Receiver:
 
     def __casas_cb(self, sensors):
         for sensor in sensors:
-            sensor_str = "{}\t{}\t{}".format(
-                str(sensor.stamp), str(sensor.target), str(sensor.message))
-            data = {'stamp': str(sensor.stamp), 'target': str(sensor.target), 'message': str(sensor.message)}
-            self.pub.publish(json.dumps(data))
+            data = casas_sensor()
+            data.by          = str(sensor.by)
+            data.site        = str(sensor.site)
+            data.sensor_type = str(sensor.sensor_type)
+            data.stamp       = str(sensor.stamp)
+            data.target      = str(sensor.target)
+            data.message     = str(sensor.message)
+
+            self.pub.publish(data)
 
     def casas_run(self):
         try:
@@ -79,8 +79,6 @@ class Receiver:
     def stop(self):
         rospy.loginfo("error_detector: disconnecting casas connection")
         self.rcon.stop()
-        self.casas_log.terminate()
-        self.casas.close()
 
     
 
@@ -90,6 +88,6 @@ if __name__ == "__main__":
         disable_signals=True,
         log_level=rospy.DEBUG if 'true' else rospy.INFO)
 
-    ed = ErrorDetector()
+    ed = Receiver()
     ed.casas_run()
     rospy.on_shutdown(ed.stop)

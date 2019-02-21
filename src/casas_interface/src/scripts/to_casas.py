@@ -3,10 +3,12 @@
 # send them to casas properly!
 
 import threading
+import rospy
+
 from collections import deque
 
-from casas.publish import PublishToCasas
-from ras_msgs.msgs import casas_data
+from casas_lib.publish import PublishToCasas
+from ras_msgs.msg import casas_data
 
 def Sender():
 
