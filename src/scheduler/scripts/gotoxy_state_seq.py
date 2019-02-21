@@ -240,15 +240,15 @@ class GotoXYState(smach.State):
 
             # Eat
             if userdata.task_number_in == 1:
-                object_to_find = 'rebase_watercan'
+                object_to_find = 'hallway'
 
             # Work
             elif userdata.task_number_in == 2:
-                object_to_find = 'rebase_watercan'
+                object_to_find = 'couchway'
 
             # Meds
             elif userdata.task_number_in == 3:
-                object_to_find = 'kitchen'
+                object_to_find = 'kitchenway'
 
             # Error
             else:

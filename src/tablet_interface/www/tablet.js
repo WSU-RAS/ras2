@@ -135,15 +135,12 @@ function showChoice() {
 }
 function showMoving() {
     showOne('default');
-    playSound('resources/star-wars.mp3');
+    playSound('resources/woods.mp3');
     basename = getBasename();
     document.getElementById("face").src = basename + 'pictures/black_happy_without_mouth.jpg';
 }
 function showStuck() {
     showOne('default');
-    playSound('resources/error.mp3');
-    playSound('resources/error.mp3');
-    playSound('resources/error.mp3');
     playSound('resources/error.mp3');
     playSound('resources/error.mp3');
     basename = getBasename();

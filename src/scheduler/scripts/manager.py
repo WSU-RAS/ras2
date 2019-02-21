@@ -150,7 +150,7 @@ class Scheduler:
         # Unpack data in dict
         data = yaml.safe_load(data.data)
 
-        rospy.loginfo(data)
+        #rospy.loginfo(data)
 
         if data['target'] != 'EST315':
             return None
@@ -381,17 +381,17 @@ class Scheduler:
 
         # Eat        
         if goal == 1:
-            obj_name = 'Orange'
+            obj_name = 'N/A'
             full_url = 'eat.all.mp4'
             step_url = 'eat.error3.mp4'
         # Work
         elif goal == 2:
-            obj_name = 'Lappy'
+            obj_name = 'lappy'
             full_url = 'work.all.mp4'
             step_url = 'work.error1.mp4'
         # Meds
         elif goal == 3:
-            obj_name = 'Beans'
+            obj_name = 'N/A'
             full_url = 'takemedicine.all.mp4'
             step_url = 'takemedicine.error3.mp4'
                
