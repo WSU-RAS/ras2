@@ -375,17 +375,17 @@ class Scheduler:
 
         # Eat        
         if goal == 1:
-            obj_name = 'Gernolla Bar'
+            obj_name = 'Orange'
             full_url = 'eat.all.mp4'
             step_url = 'eat.error3.mp4'
         # Work
         elif goal == 2:
-            obj_name = 'lappy top'
+            obj_name = 'Lappy'
             full_url = 'work.all.mp4'
             step_url = 'work.error1.mp4'
         # Meds
         elif goal == 3:
-            obj_name = 'Pills (beans)'
+            obj_name = 'Beans'
             full_url = 'takemedicine.all.mp4'
             step_url = 'takemedicine.error3.mp4'
                
@@ -443,6 +443,10 @@ class Scheduler:
                 self.do_error_feedback(
                     Status.FAILED, "EXPERIMENTER NEEDS TO TELEOP ROBOT TO HUMAN")
                 rospy.logwarn("manager: Experimenter needs to teleop robot to human")
+
+                # Display we are stuck :(
+                self.tablet_setup("moving")
+                rospy.sleep(3)
 
         # Teleop navigation to human
         elif self.teleop_only:

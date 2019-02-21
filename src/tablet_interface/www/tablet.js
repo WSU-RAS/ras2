@@ -133,6 +133,18 @@ function showChoice() {
     basename = getBasename();
     document.getElementById("face").src = basename + 'pictures/black_surprised_with_mouth.jpg';
 }
+function showMoving() {
+    showOne('default');
+    playSound('resources/star-wars.mp3');
+    basename = getBasename();
+    document.getElementById("face").src = basename + 'pictures/black_happy_without_mouth.jpg';
+}
+function showStuck() {
+    showOne('default');
+    playSound('resources/error.mp3');
+    basename = getBasename();
+    document.getElementById("face").src = basename + 'pictures/black_surprised_with_mouth.jpg';
+}
 function showOptions() {
     showOne('options');
     playSound('resources/select-options.mp3');
@@ -161,6 +173,7 @@ function respondChoice(choice) {
     } else {
         sendROSResponse("no");
         showDefault(false);
+        playSound('resources/lol.mp3');
     }
 }
 function respondOptions(option) {
@@ -245,6 +258,8 @@ autoReconnect(function() { }, function () {
         switch (screen) {
             case "default": showDefault(false); break;
             case "choice":  showChoice();  break;
+            case "moving":  showMoving();  break;
+            case "stuck":  showStuck();  break;
             case "options": showOptions(); break;
             default:
                 console.log("Unknown screen");
