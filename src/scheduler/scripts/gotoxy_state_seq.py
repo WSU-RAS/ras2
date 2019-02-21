@@ -241,12 +241,17 @@ class GotoXYState(smach.State):
                 object_to_find = 'walkway'
 
             # Work
-            if userdata.task_number_in == 2:
+            elif userdata.task_number_in == 2:
                 object_to_find = 'walkway'
 
             # Meds
-            if userdata.task_number_in == 3:
+            elif userdata.task_number_in == 3:
                 object_to_find = 'kitchen'
+
+            # Error
+            else:
+                rospy.logerr('gotoxy: Unknown task sent!')
+                rospy.logerr('gotoxy: task=' + str(userdata.task_number_in))
 
             points = multi_path(userdata.last_object_in, object_to_find)
 

@@ -150,6 +150,8 @@ class Scheduler:
         # Unpack data in dict
         data = yaml.safe_load(data.data)
 
+        rospy.loginfo(data)
+
         if data['target'] != 'EST315':
             return None
 
@@ -161,7 +163,6 @@ class Scheduler:
         result = 'eat'
 
         # Do error logic
-        goal = None
         if result == 'eat':
             goal.task_number = 1
         elif result == 'work':
@@ -369,10 +370,12 @@ class Scheduler:
             ))
 
     # New to v2
-    def lookup_tablet(self, goal):
+    def lookup_tablet(self, goal_class):
         obj_name = ''
         full_url = ''
         step_url = ''
+
+        goal = goal_class.task_number
 
         # Eat        
         if goal == 1:
@@ -401,8 +404,6 @@ class Scheduler:
         What to do when error detection calls this action server, when an error
         is detected
         """
-
-        goal = self.goal
 
         self.is_error_correction_done = False
         self.is_error_corrected = False
