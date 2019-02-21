@@ -1,1 +1,3 @@
 src/* filter=git-crypt-casas_key diff=git-crypt-casas_key
+src/casas_lib/* filter=git-crypt-casas_key diff=git-crypt-casas_key
+src/casas_cfg/* filter=git-crypt-casas_key diff=git-crypt-casas_key
