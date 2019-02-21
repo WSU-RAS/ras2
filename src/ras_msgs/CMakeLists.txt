@@ -62,6 +62,7 @@ add_message_files(
   SensorPub.msg
   Lurker_base_msg.msg
   RobotToMapTransformState.msg
+  casas_data.msg
 )
 
 ## Generate services in the 'srv' folder
