@@ -152,7 +152,7 @@ class Scheduler:
 
         #rospy.loginfo(data)
 
-        if data['target'] != 'EST315':
+        if data['is_error'] != 'true':
             return None
 
         goal = DoErrorGoal()
@@ -160,14 +160,14 @@ class Scheduler:
         goal.error_step =  0
     
         # Filter by appropriate params
-        result = 'eat'
+        result = data['activity'] 
 
         # Do error logic
-        if result == 'eat':
+        if result == 'Eat':
             goal.task_number = 1
-        elif result == 'work':
+        elif result == 'Work':
             goal.task_number = 2
-        elif result == 'meds':
+        elif result == 'Take_Medicine':
             goal.task_number = 0
         else:
             goal.task_number = -1

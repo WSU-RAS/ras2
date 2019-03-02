@@ -75,7 +75,7 @@ class ErrorDetector:
 
     def casas_setup_exchange(self):
         self.rcon.setup_subscribe_to_exchange(
-            exchange_name='all.events.testbed.casas',
+            exchange_name='all.ai.testbed.casas',
             exchange_type='topic',
             routing_key='#',
             exchange_durable=True,
@@ -85,10 +85,14 @@ class ErrorDetector:
 
     def __casas_cb(self, sensors):
         for sensor in sensors:
-            sensor_str = "{}\t{}\t{}".format(
-                str(sensor.stamp), str(sensor.target), str(sensor.message))
-            data = {'stamp': str(sensor.stamp), 'target': str(sensor.target), 'message': str(sensor.message)}
-            self.pub.publish(json.dumps(data))
+            sensor_str = "{}\t{}\t{}\t{}\t{}\t{}".format(
+                str(sensor.stamp), str(sensor.target), str(sensor.message), str(sensor.created_by), str(sensor.label), str(sensor.value))
+            print(sensor_str)
+            if sensor.created_by == 'RAS.InHome.ErrorDetection':
+                print('RAS In-Home Error!')
+                activity = sensor.label
+                data = {'stamp': str(sensor.stamp), 'target': str(sensor.target), 'message': str(sensor.message), 'activity': str(activity), 'is_error': str('true')}
+                self.pub.publish(json.dumps(data))
 
     def casas_run(self):
         try:
