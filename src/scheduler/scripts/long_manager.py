@@ -145,10 +145,6 @@ class Scheduler:
             return
 
 
-
-
-
-
     def casas_logging(self, agent_num, queue, test, rospy):
         # CASAS Logging
         rospy.loginfo("Creating casas logger {}".format(agent_num))
@@ -799,6 +795,8 @@ class Decode():
 
     def __init__(self):
         return None
+
+    def 
 
     def get_goal(self, activity, step):
         goal = DoErrorGoal()
