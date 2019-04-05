@@ -6,11 +6,12 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Pose, Point, Quaternion
 
+from tablet_interface.srv import Tablet
 from ras_msgs.srv import Goto_xywz
 
 class multi_points():
 
-    def __init__():
+    def __init__(self):
         # TODO: Start service which accepts many points
         return None
 
@@ -24,7 +25,7 @@ class goto_point():
 
         # Create service to handle single point goals
         # Send data to srv_cb when called
-        self.point_srv = rospy.Service('goto_point', Goto_xywz, srv_cb)
+        self.point_srv = rospy.Service('goto_point', Goto_xywz, self.srv_cb)
 
         rospy.loginfo("ras_navigation: goto_point has been initialized!")
 
@@ -80,6 +81,7 @@ class goto_point():
         self.is_running = False
 
 if __name__ == '__main__':
+    rospy.init_node('goto_point_srv')
     s = goto_point()
     t = multi_points()
 

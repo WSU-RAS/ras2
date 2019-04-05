@@ -23,12 +23,15 @@ from adl.util import get_mac
 from casas.publish import PublishToCasas
 
 from ras_msgs.msg import DoErrorAction, DoErrorGoal
+from ras_msgs.srv import Goto_xywz
 
 import tf
 from tf import TransformListener
 from tf.transformations import euler_from_quaternion
 from collections import namedtuple
 from threading import Timer
+
+from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
 
 Transformation = namedtuple('Transformation', ['x', 'y', 'z'])
 Rotation = namedtuple('Rotation', ['roll', 'pitch', 'yaw'])
@@ -499,87 +502,7 @@ class Scheduler:
 
         return False
 
-    def tablet_execute(self, goal):
-        """
-        Handle the response from what the user clicked on the tablet
-        """
-        success = True
-        response = goal.response
-        rospy.loginfo("manager: Got message from tablet: {}".format(response))
-        self.do_error_feedback(Status.INPROGRESS, "TABLET MESSAGE {}".format(response))
-
-        if response in ['yes', 'no', 'complete', 'goto', 'watchstep', 'watchfull']:
-            self.casas_0.put(dict(
-                package_type='ROS_Tablet',
-                sensor_type='ROS_Tablet_Button',
-                serial='ROS_Tablet',
-                target='ROS_Tablet_Button',
-                message={'action':'PRESSED', 'id':response},
-                category='entity'
-            ))
-
-        if response == "no" or response == "complete":
-            self.is_error_corrected = True
-            self.is_error_correction_done = True
-            if self.use_robot:
-                rospy.loginfo("manager: Sending turtlebot to base")
-                success = self.tablet_goto_execute(Goal.BASE)
-            elif self.teleop_only:
-                rospy.loginfo("manager: Experimenter needs to teleop robot to base")
-            else:
-                rospy.loginfo("manager: Robot would go back to base at this time")
-
-        elif response == 'watchstep':
-            self.casas_0.put(dict(
-                package_type='ROS_Tablet',
-                sensor_type='ROS_Tablet_Video',
-                serial='ROS_Tablet',
-                target='ROS_Tablet_Video',
-                message={'action':'BEGIN', 'id':response, 'video':self.video_step_url},
-                category='state'
-            ))
-            self.watch_video_url = self.video_step_url
-
-        elif response == 'watchfull':
-            self.casas_0.put(dict(
-                package_type='ROS_Tablet',
-                sensor_type='ROS_Tablet_Video',
-                serial='ROS_Tablet',
-                target='ROS_Tablet_Video',
-                message={'action':'BEGIN', 'id':response, 'video':self.video_full_url},
-                category='state'
-            ))
-            self.watch_video_url = self.video_full_url
-
-        elif response == "videodone":
-            self.casas_0.put(dict(
-                package_type='ROS_Tablet',
-                sensor_type='ROS_Tablet_Video',
-                serial='ROS_Tablet',
-                target='ROS_Tablet_Video',
-                message={'action':'END', 'id':response, 'video':self.watch_video_url},
-                category='state'
-            ))
-            self.watch_video_url = ""
-            # Return to the options screen
-            self.tablet_setup("options")
-
-        elif response == "goto":
-            if self.use_robot:
-                rospy.loginfo("manager: Sending turtlebot to find object")
-                success = self.tablet_goto_execute(Goal.OBJECT)
-            elif self.teleop_only:
-                rospy.loginfo("manager: Experimenter needs to teleop robot to object")
-                # Fake getting to object successfully on the tablet
-                self.tablet_setup("options", navigateComplete=True)
-            else:
-                rospy.loginfo("manager: Robot would go to object at this time")
-                # Fake getting to object successfully on the tablet
-                self.tablet_setup("options", navigateComplete=True)
-
-        tablet_result = TabletResult()
-        tablet_result.success = success
-        self.tablet.set_succeeded(tablet_result)
+    
 
     def goto_base_execute(self, goal):
         """
@@ -728,11 +651,157 @@ class Scheduler:
             feedback.text))
         self.log_robot_location()
 
+class Tablet_control():
+
+    def __init__(self):
+        return None
+
+
+def tablet_execute(self, goal):
+        """
+        Handle the response from what the user clicked on the tablet
+        """
+        success = True
+        response = goal.response
+        rospy.loginfo("manager: Got message from tablet: {}".format(response))
+        self.do_error_feedback(Status.INPROGRESS, "TABLET MESSAGE {}".format(response))
+
+        if response in ['yes', 'no', 'complete', 'goto', 'watchstep', 'watchfull']:
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Button',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Button',
+                message={'action':'PRESSED', 'id':response},
+                category='entity'
+            ))
+
+        if response == "no" or response == "complete":
+            self.is_error_corrected = True
+            self.is_error_correction_done = True
+            if self.use_robot:
+                rospy.loginfo("manager: Sending turtlebot to base")
+                success = self.tablet_goto_execute(Goal.BASE)
+            elif self.teleop_only:
+                rospy.loginfo("manager: Experimenter needs to teleop robot to base")
+            else:
+                rospy.loginfo("manager: Robot would go back to base at this time")
+
+        elif response == 'watchstep':
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'BEGIN', 'id':response, 'video':self.video_step_url},
+                category='state'
+            ))
+            self.watch_video_url = self.video_step_url
+
+        elif response == 'watchfull':
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'BEGIN', 'id':response, 'video':self.video_full_url},
+                category='state'
+            ))
+            self.watch_video_url = self.video_full_url
+
+        elif response == "videodone":
+            self.casas_0.put(dict(
+                package_type='ROS_Tablet',
+                sensor_type='ROS_Tablet_Video',
+                serial='ROS_Tablet',
+                target='ROS_Tablet_Video',
+                message={'action':'END', 'id':response, 'video':self.watch_video_url},
+                category='state'
+            ))
+            self.watch_video_url = ""
+            # Return to the options screen
+            self.tablet_setup("options")
+
+        elif response == "goto":
+            if self.use_robot:
+                rospy.loginfo("manager: Sending turtlebot to find object")
+                success = self.tablet_goto_execute(Goal.OBJECT)
+            elif self.teleop_only:
+                rospy.loginfo("manager: Experimenter needs to teleop robot to object")
+                # Fake getting to object successfully on the tablet
+                self.tablet_setup("options", navigateComplete=True)
+            else:
+                rospy.loginfo("manager: Robot would go to object at this time")
+                # Fake getting to object successfully on the tablet
+                self.tablet_setup("options", navigateComplete=True)
+
+        tablet_result = TabletResult()
+        tablet_result.success = success
+        self.tablet.set_succeeded(tablet_result)
+
 class StateM():
 
     def __init__(self):
         self.state = 'idle'
         self.dec   = Decode()
+
+    def start(self, activity, step):
+        # Begin by getting activity, step
+        self.activity = activity
+        self.step     = step
+
+        # Begin tablet play sound + face
+
+        # Next locate the human
+        human = self.get_human()
+
+        start_time = rospy.Time.now()
+        timeout = rospy.Duration(secs=30, nsecs=0)
+        if rospy.Time.now() - human.time < timeout:
+            human_found = False
+        else:
+            human_found = True
+
+        # If human not found go to alternative point
+        if not human_found:
+            self.send_goal(activity, step, 'something')
+
+        # Try find human again
+        human = self.get_human()
+
+        start_time = rospy.Time.now()
+        timeout = rospy.Duration(secs=30, nsecs=0)
+        if rospy.Time.now() - human.time < timeout:
+            human_found = False
+        else:
+            human_found = True
+
+
+        # If not found stop
+        if not human_found:
+            self.send_goal(activity, step, 'something')
+        else:
+            self.send_goal('other_stuff')
+
+        # Display yes/no
+        
+
+        # 
+    
+    def get_object(self, name):
+        # Make Sure service is ready
+        rospy.wait_for_service("query_objects")
+
+        try:
+            query = rospy.ServiceProxy("query_objects", ObjectQuery)
+            result = query(name)
+            return result.locations
+        except rospy.ServiceException, e:
+            rospy.logerr("Service call failed: %s" % e)
+        return None
+
+    def get_human(self):
+        return self.get_object('human')
         
 
     def send_goal(self, activity, step):
@@ -750,6 +819,24 @@ class StateM():
         # CHECK SUCCED FOR GOTO
         
         # Next state
+
+    def move(self, x, y, w, z):
+        # Make Sure service is ready
+        rospy.wait_for_service('goto_point')
+
+        # Format point
+        pnt = Goto_xywz()
+        pnt.x = x
+        pnt.y = y
+        pnt.w = w
+        pnt.z = z
+        try:
+            goto_srv = rospy.ServiceProxy('goto_point', Goto_xywz)
+            response = goto_srv(pnt)
+            return response.sum
+        except rospy.ServiceException, e:
+            rospy.loginfo("Schedular --> move: Failed to call service")
+            rospy.loginfo("Schedular --> move:", e)
 
     def state_idle(self):
         return None
@@ -796,7 +883,15 @@ class Decode():
     def __init__(self):
         return None
 
-    def 
+    def get_object_location(self, name):
+        rospy.wait_for_service("query_objects")
+        try:
+            query = rospy.ServiceProxy("query_objects", ObjectQuery)
+            result = query(name)
+            return result.locations
+        except rospy.ServiceException, e:
+            rospy.logerr("Service call failed: %s" % e)
+        return None
 
     def get_goal(self, activity, step):
         goal = DoErrorGoal()
