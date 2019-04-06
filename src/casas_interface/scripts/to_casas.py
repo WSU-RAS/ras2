@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # This file is to be used to send ALL information to casas
 # It should subscribe to appropriate topics in this file and 
 # send them to casas properly!
@@ -5,17 +7,17 @@
 import threading
 import rospy
 
+import sys
+sys.path.append('../src')
+
 from collections import deque
 
-from casas_lib.publish import PublishToCasas
-from ras_msgs.msg import casas_data
+from .src.casas_lib import PublishToCasas
+from ras_msgs.msg import casas_sensor
 
 def Sender():
 
     def __init__(self):
-
-        # Var for holding mac address to send to casas
-        self.mac_address = get_mac()
 
         # Queue used for holding messages to send to casas
         self.queue = deque()
@@ -30,7 +32,7 @@ def Sender():
 
     # Many to one channel
     def subscribe():
-        rospy.Subscriber("to_casas", casas_data, data_cb)
+        rospy.Subscriber("to_casas", casas_sensor, data_cb)
 
     # What gets called when info is sent via 'to_casas'
     def data_cb(self, data):

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+
+<node pkg="casas_interface" name="to_casas" type="to_casas.py"/>
+<node pkg="casas_interface" name="from_casas" type="from_casas.py"/>
+
+
+</launch>
