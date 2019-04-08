@@ -12,42 +12,12 @@
     <node name="goto" pkg="scheduler" type="goto.py" output="screen" />
     <node name="find_person_server" pkg="find_person" type="find_person_server.py" output="screen" />
 
-    <!--
-         Since we don't have good if/else or switch statements and you can't
-         change arg values...
-
-         new_map true: then save to map.pbstream
-         new_map false:
-             lab true: load casas.pbstream
-             lab false: load kyoto.pbstream
-         -->
-    <group if="$(eval new_map == true)">
-        <!-- Navigation -->
-        <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
-            <arg name="new_map" value="$(arg new_map)" />
-            <arg name="gui" value="$(arg gui)" />
-            <arg name="map_name" value="map.pbstream" />
-        </include>
-    </group>
-    <group if="$(eval new_map == false)">
-        <group if="$(eval lab == true)">
-            <!-- Navigation -->
-            <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
-                <arg name="new_map" value="$(arg new_map)" />
-                <arg name="gui" value="$(arg gui)" />
-                <arg name="map_name" value="casas.pbstream" />
-            </include>
-        </group>
-        <group if="$(eval lab == false)">
-            <!-- Navigation -->
-            <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
-                <arg name="new_map" value="$(arg new_map)" />
-                <arg name="gui" value="$(arg gui)" />
-                <arg name="map_name" value="kyoto.pbstream" />
-            </include>
-        </group>
-    </group>
-
+    <!-- Navigation -->
+    <include file="$(find ras_navigation)/launch/RAS_Navigation.launch">
+        <arg name="new_map" value="$(arg new_map)" />
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="map_name" value="kyoto.pbstream" />
+    </include>
 
     <!-- Tablet -->
     <include file="$(find tablet_interface)/launch/web.launch" />

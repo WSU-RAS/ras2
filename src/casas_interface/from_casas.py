@@ -9,7 +9,6 @@ import json
 
 from adl.util import ConnectPythonLoggingToRos
 from casas import objects, rabbitmq
-from casas.publish import PublishToCasas
 
 from std_msgs.msg import String
 from ras_msgs.msg import casas_sensor

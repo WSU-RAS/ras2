@@ -2,7 +2,7 @@ import rospy
 import rospkg
 
 from turtlebot3_msgs.msg import SensorState
-from ras_msgs.msg import casas_sensor
+from ras_msgs.msg import casas_data
 from adl.util import get_mac
 
 import tf
@@ -30,10 +30,10 @@ class casas_logger():
 
     def __init__(self):
         self.mac = get_mac()
-        self.pub = rospy.Publisher('to_casas', casas_sensor, queue_size=20)
+        self.pub = rospy.Publisher('to_casas', casas_data, queue_size=20)
 
     def log(self, sensor_type, target, message, category):
-        data = casas_sensor()
+        data = casas_data()
         data.package_type = 'ROS'
         data.sensor_type  = sensor_type
         data.serial       = self.mac

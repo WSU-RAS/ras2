@@ -10,6 +10,7 @@ import yaml
 
 from std_msgs.msg import String
 
+from ras_msgs.msg import casas_sensor
 from ras_msgs.msg import DoErrorGoal
 from ras_msgs.srv import Goto_xywz
 
@@ -174,20 +175,22 @@ class Mang():
         state_machine = StateM()
 
         # Listen for casas data
-        rospy.Subscriber("casas_sensor", String, self.sensor_listener)
+        rospy.Subscriber("casas_sensor", casas_sensor, self.sensor_listener)
 
     def sensor_listener(self, data):
-        # Unpack string data in dict
-        data = yaml.safe_load(data.data)
 
-        #rospy.loginfo(data)
         # Filter out non-error data types
-        if data['is_error'] != 'true':
+        if data.by != 'RAS.InHome.ErrorDetection':
             return None
-    
+
+        # TODO: Bryan
         # Filter by appropriate params
-        activity = data['activity'] 
-        step     = data['step']
+        try:
+            activity = data.message['activity'] 
+            step     = data.message['step']
+
+        except Exception as e:
+            print(e)
 
         # Send activity and step to state machine
         state_machine.start(activity, step)

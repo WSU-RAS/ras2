@@ -3,4 +3,4 @@ string sensor_type
 string serial
 string target
 string message
-string catagory
+string category
