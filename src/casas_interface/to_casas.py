@@ -60,7 +60,8 @@ class Sender():
                     rospy.loginfo(d)
                     casas.publish(d[0], d[1], d[2], d[3], d[4], d[5])
                 else:
-                    rospy.sleep(0.0001)
+                    #rospy.loginfo('CASAS Connection HeartBeat')
+                    rospy.sleep(0.1)
         finally:
             rospy.signal_shutdown("Cannot connect to CASAS (user {})! Need to restart.".format(agent_num))
             casas.finish()
