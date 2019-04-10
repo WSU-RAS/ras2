@@ -89,7 +89,7 @@ function getBasename() {
     } else {
         basename = 'http://casas.wsu.edu/smarthomestats/'
     }
-    basename = 'http://kyoto.kyoto.local/'
+    basename = 'http://casas.wsu.edu/smarthomestats/'
     return basename;
 }
 
@@ -257,7 +257,7 @@ autoReconnect(function() { }, function () {
 
         // Show desired screen
         switch (screen) {
-            case "default": showDefault(false); break;
+            case "init": showDefault(false); break;
             case "choice":  showChoice();  break;
             case "moving":  showMoving();  break;
             case "stuck":  showStuck();  break;
