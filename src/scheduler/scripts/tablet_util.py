@@ -23,23 +23,16 @@ class tablet_backend():
         rospy.wait_for_service("tablet")
         rospy.loginfo("manager: Found /tablet service")
 
-        # We don't show the go to object button when we've already navigated to it
-        if navigateComplete:
-            object_name = "done"
-        elif showObject and self.object_name is not None:
-            object_name = self.object_name
-        else:
-            object_name = ""
 
         rospy.loginfo(
             "Commanding tablet: s: %s o: %s f: %s vs: %s vf: %s",
-            screen, object_name, TabletData.face_url, self.video_step_url,
+            screen, self.object_name, self.face_url, self.video_step_url,
             self.video_full_url)
 
         try:
             query = rospy.ServiceProxy("tablet", Tablet)
             results = query(
-                screen, object_name, TabletData.face_url,
+                screen, self.object_name, self.face_url,
                 self.video_step_url, self.video_full_url)
             return results.success
         except rospy.ServiceException, e:
