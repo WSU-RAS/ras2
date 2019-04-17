@@ -104,7 +104,7 @@ function playVideo(url) {
 
         var vid = document.getElementById("video-wrapper");
         var source = document.getElementById("video-source");
-        source.setAttribute('src', basename + 'videos/' + url);
+        source.setAttribute('src', basename + 'videos/ras001/' + url);
         vid.onended = function() {
             respondVideoDone();
         };

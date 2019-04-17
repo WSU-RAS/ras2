@@ -19,6 +19,7 @@ class StateM():
     def __init__(self):
         # Lookup table for stuff
         self.dec   = Decode()
+        self.state = "idle"
 
     def start(self, activity, step):
         # Begin by getting activity, step
@@ -50,14 +51,17 @@ class StateM():
         #   last 30s
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=30, nsecs=0)
-        if rospy.Time.now() - human.time < timeout:
+        try:
+            if rospy.Time.now() - human.time < timeout:
+                human_found = False
+            else:
+                human_found = True
+        except:
             human_found = False
-        else:
-            human_found = True
 
         # If human not seen recently go to alternative point
         if not human_found:
-            self.send_goal(self.dec.point(activity, step, '1'))
+            self.send_goal(self.dec.point(self.activity, self.step, '1'))
 
         # Try find human again
         human = self.dec.get_human()
@@ -66,14 +70,17 @@ class StateM():
         #   last 30s    
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=30, nsecs=0)
-        if rospy.Time.now() - human.time < timeout:
+        try:
+            if rospy.Time.now() - human.time < timeout:
+                human_found = False
+            else:
+                human_found = True
+        except:
             human_found = False
-        else:
-            human_found = True
 
         # If not found stop
         if not human_found:
-            self.send_goal(self.dec.point(activity, step, '2'))
+            self.send_goal(self.dec.point(self.activity, self.step, '2'))
 
         # Else goto human
         else:
@@ -84,7 +91,7 @@ class StateM():
         object_, video_step, video_full, face_url = self.dec.get_data(self.activity. self.step)
 
         # Display yes/no
-        self.tablet.object = object_
+        self.tablet.object_name = object_
         self.tabelt.video_step_url = video_step
         self.tabelt.video_full_url = video_full
         self.tablet.face_url = face_url
@@ -167,20 +174,19 @@ class Mang():
     def sensor_listener(self, data):
 
         # Filter out non-error data types
-        if data.by != 'RAS.InHome.ErrorDetection':
+        if data.created_by != 'RAS.InHome.ErrorDetection':
             return None
 
         # TODO: Bryan
         # Filter by appropriate params
         try:
-            activity = data.message['activity'] 
-            step     = data.message['step']
+            activity = data.label
 
         except Exception as e:
             print(e)
 
         # Send activity and step to state machine
-        self.state_machine.start(activity, step)
+        self.state_machine.start(activity, '0')
 
 
 

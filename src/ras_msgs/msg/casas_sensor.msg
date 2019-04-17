@@ -1,6 +1,6 @@
-string by
-string site
-string sensor_type
+string created_by
 string stamp
 string target
 string message
+string label
+string value

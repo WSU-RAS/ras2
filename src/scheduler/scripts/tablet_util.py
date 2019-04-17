@@ -1,7 +1,11 @@
 from ras_msgs.msg import TabletAction, TabletFeedback, TabletResult
 from tablet_interface.srv import Tablet
 
+from actionlib import SimpleActionServer
+
 from casas_util import casas_logger
+
+import rospy
 
 class tablet_backend():
 
@@ -13,6 +17,10 @@ class tablet_backend():
             execute_cb=self.tablet_execute,
             auto_start=False)
         self.tablet.start()
+        self.object_name    = ""
+        self.face_url       = "" 
+        self.video_step_url = ""
+        self.video_full_url = ""
 
     def tablet_setup(self, screen, showObject=True, navigateComplete=False,
             gotoObjectComplete=False):

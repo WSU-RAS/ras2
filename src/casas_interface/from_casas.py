@@ -17,8 +17,10 @@ class Receiver:
 
     def __init__(self):
 
+        #rospy.logerr("Hello this is from_casas Receiver")
+
         rospack = rospkg.RosPack()
-        self.pkg_path = rospack.get_path('adl_error_detection')
+        self.pkg_path = rospack.get_path('casas_interface')
 
         self.test = False
         self.test_error = False
@@ -27,8 +29,11 @@ class Receiver:
 
         # CASAS Sensors
         config = configparser.ConfigParser()
-        config.read(self.pkg_path + "/scripts/casas.cfg")
+        config.read(self.pkg_path + "/src/casas_cfg/casas.cfg")
         default = config['DEFAULT']
+
+        #rospy.logerr(default)
+        #rospy.logerr(default['AmqpHost'])
 
         self.translate = dict()
         self.rcon = rabbitmq.Connection(
@@ -49,7 +54,7 @@ class Receiver:
 
     def casas_setup_exchange(self):
         self.rcon.setup_subscribe_to_exchange(
-            exchange_name='all.events.testbed.casas',
+            exchange_name='all.ai.testbed.casas',
             exchange_type='topic',
             routing_key='#',
             exchange_durable=True,
@@ -60,12 +65,12 @@ class Receiver:
     def __casas_cb(self, sensors):
         for sensor in sensors:
             data = casas_sensor()
-            data.by          = str(sensor.by)
-            data.site        = str(sensor.site)
-            data.sensor_type = str(sensor.sensor_type)
+            data.created_by  = str(sensor.created_by)
             data.stamp       = str(sensor.stamp)
             data.target      = str(sensor.target)
             data.message     = str(sensor.message)
+            data.value       = str(sensor.value)
+            data.label       = str(sensor.label)
 
             self.pub.publish(data)
 

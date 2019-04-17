@@ -8,6 +8,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 
 from tablet_interface.srv import Tablet
 from ras_msgs.srv import Goto_xywz
+from ras_msgs.msg import Goto_xywz_msg
 
 class multi_points():
 

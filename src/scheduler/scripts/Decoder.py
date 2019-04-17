@@ -11,29 +11,34 @@ class Decode():
     def point(self, activity, step, state):
         # Note: Steps dont matter at the moment
         pnt = None
-        
+
+        # TODO: Remove when we have points figured out!!!!
+        #***********************************************************
+        return self.get_object_location('base')
+
+
         # Activity = 0 --> Take Medicine
-        if activity == '0':
-            if state == '1': 
+        if activity == 'Take_Medicine':
+            #if state == '1':
             if state == '4':
                 pnt = get_object_location('base')
 
         # Activity = 1 --> Make Coffee
-        if activity == '1':
-            if state == '1': 
+        if activity == 'Make_Coffee':
+            #if state == '1': 
             if state == '4':
                 pnt = get_object_location('base')
 
         # Activity = 2 --> Make Breakfest
-        if activity == '2':
-            if state == '1': 
+        if activity == 'Eat':
+            #if state == '1': 
             if state == '4':
                 pnt = get_object_location('base')
 
         return pnt
 
 
-    def get_human(self)
+    def get_human(self):
         loc = self.get_object_location('human')
         return loc
 
@@ -42,7 +47,7 @@ class Decode():
         try:
             query = rospy.ServiceProxy("query_objects", ObjectQuery)
             result = query(name)
-            return result.locations
+            return result.locations[0]
         except rospy.ServiceException, e:
             rospy.logerr("Service call failed: %s" % e)
         return None
@@ -58,22 +63,22 @@ class Decode():
         face_url       = 'happy-cartoon-face-hi.png'
 
         # Activity = 0 --> Take Medicine
-        if activity == '0':
-            object_to_find = ''
-            video_step_url = ''
-            video_full_url = ''
+        if activity == 'Take_Medicine':
+            object_to_find = 'Spoons'
+            video_step_url = 'error/takemedicine.error45.mp4'
+            video_full_url = 'full/takemedicine.full.mp4'
 
         # Activity = 1 --> Make Coffee
-        elif activity == '1':
-            object_to_find = ''
-            video_step_url = ''
-            video_full_url = ''
+        elif activity == 'Make_Coffee':
+            object_to_find = 'Coffee Grounds'
+            video_step_url = 'error/makecoffee.error5.mp4 '
+            video_full_url = 'full/makecoffee.full.mp4 '
 
         # Activity = 2 --> Make Breakfest
-        elif activity == '2':
-            object_to_find = ''
-            video_step_url = ''
-            video_full_url = ''
+        elif activity == 'Eat':
+            object_to_find = 'Sink'
+            video_step_url = 'error/eat.error4.mp4 '
+            video_full_url = 'full/eat.all.mp4'
 
         return object_to_find, video_step_url, video_full_url, face_url
 
