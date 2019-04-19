@@ -18,4 +18,4 @@ export ROS_MASTER_URI=http://${ROS_IP}:11311
 export TURTLEBOT_3D_SENSOR=astra
 export TURTLEBOT3_MODEL=waffle
 
-roslaunch scheduler long_experiment.launch
+roslaunch scheduler long_term.launch

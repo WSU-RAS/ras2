@@ -22,33 +22,41 @@ class StateM():
         self.dec   = Decode()
         self.state = "idle"
         self.logger = casas_logger()
+        self.isRunning = False
 
     def start(self, activity, step):
-        # Start system logging
-        self.logger.log('ROS_Manager', 'ROS_State', 'start', 'state')
+        try:
+            self.isRunning = True
+            # Start system logging
+            self.logger.log('ROS_Manager', 'ROS_State', 'start', 'state')
 
-        # Begin by getting activity, step
-        self.activity = activity
-        self.step     = step
+            # Begin by getting activity, step
+            self.activity = activity
+            self.step     = step
 
-        # Get tablet backend ready
-        self.tablet = tablet_backend()
+            # Get tablet backend ready
+            self.tablet = tablet_backend()
 
-        # Begin tablet play sound + face
-        self.tablet.tablet_setup("moving")
-    
-        # Search for human
-        self.handle_human()
+            # Begin tablet play sound + face
+            self.tablet.tablet_setup("moving")
         
-        # Do tablet interface here
-        self.handle_tab()
+            # Search for human
+            self.handle_human()
+            
+            # Do tablet interface here
+            self.handle_tab()
 
-        # Robot back to base!
-        self.handle_base()
+            # Robot back to base!
+            self.handle_base()
 
-        self.logger.log('ROS_Manager', 'ROS_State', 'end', 'state')
+            self.logger.log('ROS_Manager', 'ROS_State', 'end', 'state')
 
-        return 'success'
+            self.isRunning = False
+            return 'success'
+
+        except:
+            self.isRunning = False
+            return 'failed'
     
     def handle_human(self):
         # Next locate the human
@@ -191,8 +199,13 @@ class Mang():
         except Exception as e:
             print(e)
 
+        # Do nothing if running :)        
+        if self.state_machine.isRunning:
+            return None
+        
         # Send activity and step to state machine
-        self.state_machine.start(activity, '0')
+        else:
+            self.state_machine.start(activity, '0')
 
 
 
