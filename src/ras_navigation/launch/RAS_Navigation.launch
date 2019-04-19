@@ -56,6 +56,9 @@ type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
   <!-- Used to start the move base sequence service for going to multiple points -->
   <node name="move_base_srv" pkg="ras_navigation" type="move_base_seq.py" output="screen"/> 
 
+  <!-- Used to geo bound robot -->
+  <node name="bounds_node" pkg="ras_navigation" type="bounds.py" output="screen"/> 
+
 
   <!-- Used to save maps from our cartographer mapping node output -->
   <group if="$(eval new_map == true)">

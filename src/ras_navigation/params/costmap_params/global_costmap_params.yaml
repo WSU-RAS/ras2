@@ -22,9 +22,10 @@ global_costmap:
   origin_y: -10.0
 
 #Input sources to the costmap
-  observation_sources: filter_scan lazar #scan #depth
+  observation_sources: filter_scan lazar geobound #scan #depth boundaries
 
   filter_scan: {data_type: LaserScan, topic: scan_filtered, marking: false, clearing: true}
   lazar: {data_type: PointCloud2, topic: scan_matched_points2, marking: true, clearing: true}
+  geobound: {data_type: PointCloud2, topic: geo_bound, marking: true, clearing: false}
 #  scan: {data_type: LaserScan, topic: scan, marking: true, clearing: true}
 #  depth: {data_type: PointCloud2, topic: camera/depth_registered/points, marking: true, clearing: false}

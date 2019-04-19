@@ -6,6 +6,7 @@ tabletResponse = new ROSLIB.ActionClient({
     actionName: 'ras_msgs/TabletAction'
 });
 
+
 function sendROSResponse(msg) {
     var timeout = 5000; // Milliseconds
 
@@ -229,6 +230,7 @@ document.getElementById("buttonComplete").onmousedown = function() {
     respondOptions("complete");
     showDefault(true); // Show happy face
     playSound('resources/okay-thank-you.mp3');
+
     playSound('resources/A-team.mp3');
 }
 document.getElementById("buttonInit").onmousedown = function() {
