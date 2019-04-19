@@ -1,6 +1,6 @@
-string package_type
-string sensor_type
-string serial
+string created_by
+string stamp
 string target
 string message
-string category
+string label
+string value

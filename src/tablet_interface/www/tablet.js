@@ -89,7 +89,7 @@ function getBasename() {
     } else {
         basename = 'http://casas.wsu.edu/smarthomestats/'
     }
-    basename = 'http://kyoto.kyoto.local/'
+    basename = 'http://ras001/'
     return basename;
 }
 
@@ -174,7 +174,7 @@ function respondChoice(choice) {
     } else {
         sendROSResponse("no");
         showDefault(false);
-        playSound('resources/lol.mp3');
+        playSound('resources/A-team.mp3');
     }
 }
 function respondOptions(option) {
@@ -229,6 +229,7 @@ document.getElementById("buttonComplete").onmousedown = function() {
     respondOptions("complete");
     showDefault(true); // Show happy face
     playSound('resources/okay-thank-you.mp3');
+    playSound('resources/A-team.mp3');
 }
 document.getElementById("buttonInit").onmousedown = function() {
     showDefault(false);
@@ -257,7 +258,7 @@ autoReconnect(function() { }, function () {
 
         // Show desired screen
         switch (screen) {
-            case "default": showDefault(false); break;
+            case "init": showDefault(false); break;
             case "choice":  showChoice();  break;
             case "moving":  showMoving();  break;
             case "stuck":  showStuck();  break;

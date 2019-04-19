@@ -1,19 +1,10 @@
 #!/usr/bin/env python
 
 import rospy
-import rospkg
-import math
+from std_msgs.msg import Float32
 
-import multiprocessing
-import json
-import yaml
-
-from std_msgs.msg import String
-
-from ras_msgs.msg import DoErrorGoal
 from ras_msgs.srv import Goto_xywz
-
-from object_detection_msgs.srv import ObjectQuery, ObjectQueryResponse
+from ras_msgs.msg import casas_sensor
 
 # logging utils
 from casas_util import *
@@ -21,13 +12,21 @@ from casas_util import *
 # Tablet backend
 from tablet_util import tablet_backend
 
+# lookup tables
+from Decoder import Decode
+
 class StateM():
 
     def __init__(self):
         # Lookup table for stuff
         self.dec   = Decode()
+        self.state = "idle"
+        self.logger = casas_logger()
 
     def start(self, activity, step):
+        # Start system logging
+        self.logger.log('ROS_Manager', 'ROS_State', 'start', 'state')
+
         # Begin by getting activity, step
         self.activity = activity
         self.step     = step
@@ -47,47 +46,66 @@ class StateM():
         # Robot back to base!
         self.handle_base()
 
+        self.logger.log('ROS_Manager', 'ROS_State', 'end', 'state')
+
         return 'success'
     
     def handle_human(self):
         # Next locate the human
-        human = self.get_object('human')
+        human = self.dec.get_human()
 
         # Check if human location was updated in
         #   last 30s
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=30, nsecs=0)
-        if rospy.Time.now() - human.time < timeout:
+        try:
+            if rospy.Time.now() - human.time < timeout:
+                human_found = False
+            else:
+                human_found = True
+        except:
             human_found = False
-        else:
-            human_found = True
 
         # If human not seen recently go to alternative point
         if not human_found:
-            self.send_goal(self.dec.point(activity, step, '1'))
+            mes = self.send_goal(self.dec.point(self.activity, self.step, '1'))
+            self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
 
         # Try find human again
-        human = self.get_human()
+        human = self.dec.get_human()
 
         # Check if human location was updated in
         #   last 30s    
         start_time = rospy.Time.now()
         timeout = rospy.Duration(secs=30, nsecs=0)
-        if rospy.Time.now() - human.time < timeout:
+        try:
+            if rospy.Time.now() - human.time < timeout:
+                human_found = False
+            else:
+                human_found = True
+        except:
             human_found = False
-        else:
-            human_found = True
 
         # If not found stop
         if not human_found:
-            self.send_goal(self.dec.point(activity, step, '2'))
+            mes = self.send_goal(self.dec.point(self.activity, self.step, '2'))
+            self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
+
+        # Else goto human
         else:
-            self.send_goal(self.dec.point(activity, step, '3'))
+            mes = self.send_goal(self.dec.get_human())
+            self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
         
 
     def handle_tab(self):
+        object_, video_step, video_full, face_url = self.dec.get_data(self.activity, self.step)
 
         # Display yes/no
+        self.tablet.object_name = object_
+        self.tablet.video_step_url = video_step
+        self.tablet.video_full_url = video_full
+        self.tablet.face_url = face_url
+        
         self.tablet.tablet_setup("choice")
         response = None
 
@@ -106,58 +124,41 @@ class StateM():
 
             # Play video Commands
             elif response == 'watchstep' or response == 'watchfull':
-                self.dec.vid_url(self.actvity, self.step)
+                self.tablet.tablet_setup("options")
        
             # Goto Object
             elif response == 'goto':
-                obj = self.dec.obj(self.actvity, self.step)
-                self.send_goal(obj)
+                mes = self.send_goal(self.dec.point(self.activity, self.step, '3'))
+                self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
+                self.tablet.tablet_setup("options")
                 
             else:
                 rospy.logerr('Unknown response in handle_tab!')         
 
     def handle_base(self):
-        return None           
+        mes = self.send_goal(self.dec.point(self.activity, self.step, '4'))
+        self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
 
 
-    def get_object(self, name):
-        # Make Sure service is ready
-        rospy.wait_for_service("query_objects")
-
-        try:
-            query = rospy.ServiceProxy("query_objects", ObjectQuery)
-            result = query(name)
-            return result.locations
-        except rospy.ServiceException, e:
-            rospy.logerr("Service call failed: %s" % e)
-        return None
-        
-
-    def send_goal(self, activity, step):
+    def send_goal(self, point):
         # Maybe log attempted goal while running here
         if self.state != 'idle':
             return None
-        
-        # Since we are idle and got new goal handle it
-        goal = self.dec(activity, step)
 
-    def move(self, x, y, w, z):
         # Make Sure service is ready
         rospy.wait_for_service('goto_point')
 
-        # Format point
-        pnt = Goto_xywz()
-        pnt.x = x
-        pnt.y = y
-        pnt.w = w
-        pnt.z = z
         try:
+            self.state = 'moving'
             goto_srv = rospy.ServiceProxy('goto_point', Goto_xywz)
-            response = goto_srv(pnt)
-            return response.sum
+            response = goto_srv(point.x, point.y, point.w, point.z)
+            self.state = 'idle'
+            
+            return response.response
         except rospy.ServiceException, e:
             rospy.loginfo("Schedular --> move: Failed to call service")
             rospy.loginfo("Schedular --> move:", e)
+
 
 class Mang():
 
@@ -171,152 +172,27 @@ class Mang():
         self.lo = location_logger()
 
         # State machine for handling overall operation
-        state_machine = StateM()
+        self.state_machine = StateM()
 
         # Listen for casas data
-        rospy.Subscriber("casas_sensor", String, self.sensor_listener)
+        rospy.Subscriber("casas_sensor", casas_sensor, self.sensor_listener)
 
     def sensor_listener(self, data):
-        # Unpack string data in dict
-        data = yaml.safe_load(data.data)
 
-        #rospy.loginfo(data)
         # Filter out non-error data types
-        if data['is_error'] != 'true':
+        if data.created_by != 'RAS.InHome.ErrorDetection':
             return None
-    
+
+        # TODO: Bryan
         # Filter by appropriate params
-        activity = data['activity'] 
-        step     = data['step']
+        try:
+            activity = data.label
+
+        except Exception as e:
+            print(e)
 
         # Send activity and step to state machine
-        state_machine.start(activity, step)
-
-class Decode():
-
-    def __init__(self):
-        return None
-
-    # Lookup table for various points n stuff
-    def point(self, activity, step, state):
-        loc = self.get_object_location('human')
-        return loc
-
-    def get_object_location(self, name):
-        rospy.wait_for_service("query_objects")
-        try:
-            query = rospy.ServiceProxy("query_objects", ObjectQuery)
-            result = query(name)
-            return result.locations
-        except rospy.ServiceException, e:
-            rospy.logerr("Service call failed: %s" % e)
-        return None
-
-    def get_goal(self, activity, step):
-        goal = DoErrorGoal()
-        goal.task_number = -1
-        goal.error_step =  step
-
-        # Error logic
-        if activity == 'Eat':
-            goal.task_number = 1
-        elif activity == 'Work':
-            goal.task_number = 2
-        elif activity == 'Take_Medicine':
-            goal.task_number = 0
-        else:
-            goal.task_number = -1
-
-        return goal
-        #    self.call_error.send_goal(goal)
-
-    def get_data(task_number, error_step, use_location):
-        """
-        From the task number and error step, get the corresponding object name
-        and video urls
-        """
-        object_to_find = ''  # No object for this error / step
-        video_step_url = ''
-        video_full_url = ''
-
-        if task_number == Task.WATER_PLANTS:
-            video_full_url = 'waterplants.all.mp4'
-            video_step_url = 'waterplants.error{}.mp4'.format(error_step)
-            if error_step == 0:
-                object_to_find = 'watercan'
-            elif error_step == 1:
-                object_to_find = 'sink'
-            elif error_step == 2:
-                object_to_find = 'plantcoffee'
-            elif error_step == 3:
-                object_to_find = "plantside"
-
-        elif task_number == Task.TAKE_MEDS:
-            video_full_url = 'takemedication.all.mp4'
-            video_step_url = 'takemedication.error{}.mp4'.format(error_step)
-            #Adjust videos since we track new steps
-            if use_location:
-                if error_step == 3 or error_step == 5: #put_food_cup and put_med
-                    video_step_url = '' #no video
-                elif error_step == 4:
-                    video_step_url = 'takemedication.error{}.mp4'.format(error_step - 1)
-                elif error_step >= 6:
-                    video_step_url = 'takemedication.error{}.mp4'.format(error_step - 2)
-            if error_step == 0:
-                object_to_find = 'food'
-            elif error_step == 1:
-                object_to_find = 'glass'
-            elif error_step == 2:
-                object_to_find = 'sink'
-            elif error_step == (3 if not use_location else 4):
-                object_to_find = 'pillbottle'
-            elif error_step == (6 if not use_location else 8):
-                object_to_find = 'pills'
-
-        elif task_number == Task.WALK_DOG:
-            video_full_url = 'walkdog.all.mp4'
-            video_step_url = 'walkdog.error{}.mp4'.format(error_step)
-            if error_step == 0:
-                object_to_find = 'lappy'
-            elif error_step == 1:
-                object_to_find = 'leash'
-            elif error_step == 2:
-                object_to_find = 'keys'
-            elif error_step == 3:
-                object_to_find = 'dog'
-
-        return object_to_find, video_step_url, video_full_url
-
-        
-    # New to v2
-    def lookup_tablet(self, goal_class):
-        obj_name = ''
-        full_url = ''
-        step_url = ''
-
-        goal = goal_class.task_number
-
-        # Eat        
-        if goal == 1:
-            obj_name = 'N/A'
-            full_url = 'eat.all.mp4'
-            step_url = 'eat.error3.mp4'
-        # Work
-        elif goal == 2:
-            obj_name = 'lappy'
-            full_url = 'work.all.mp4'
-            step_url = 'work.error1.mp4'
-        # Meds
-        elif goal == 0:
-            obj_name = 'N/A'
-            full_url = 'takemedicine.all.mp4'
-            step_url = 'takemedicine.error3.mp4'
-               
-        # Error
-        else:
-            print('oh gawd unknown goal x_X')
-
-        return obj_name, step_url, full_url
+        self.state_machine.start(activity, '0')
 
 
 

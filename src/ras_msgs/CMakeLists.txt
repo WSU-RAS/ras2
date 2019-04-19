@@ -56,6 +56,7 @@ add_message_files(
   TaskId.msg
   TaskStatus.msg
   Goto_xy_msg.msg
+  Goto_xywz_msg.msg
   Localize_msg.msg
   Point_check_msg.msg
   Rotate_msg.msg

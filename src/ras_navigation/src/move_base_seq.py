@@ -29,17 +29,17 @@ class goto_point():
 
         rospy.loginfo("ras_navigation: goto_point has been initialized!")
 
-    def srv_cb(self, point):
+    def srv_cb(self, pnt):
         rospy.loginfo('ras_navigation --> goto_point: Point received!')
-        return self.movebase_client(point)
+        return self.movebase_client(pnt)
 
-    def movebase_client(self, point):
+    def movebase_client(self, pnt):
         # Prep goal for move base client
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         # We dont get full point just xywz!
-        point_formatted = Pose(Point(point.x, point.y,0), Quaternion(0,0,point.z, point.w))
+        point_formatted = Pose(Point(pnt.x, pnt.y,0), Quaternion(0,0, pnt.z, pnt.w))
         goal.target_pose.pose = point_formatted
 
         rospy.loginfo("ras_navigation --> goto_point: Sending point to Action Server")
@@ -54,9 +54,14 @@ class goto_point():
 
         # Set timeout constraints
         start_time = rospy.Time.now()
-        timeout = rospy.Duration(secs=120, nsecs=0)
+        timeout = rospy.Duration(secs=30, nsecs=0)
         while self.is_running and rospy.Time.now() - start_time < timeout:
             self.rate.sleep()
+
+        if rospy.Time.now() - start_time >= timeout:
+            self.move_base.cancel_goal()
+            rospy.loginfo("ras_navigation --> goto_point: Preempted")
+            return "preempted"
 
         if not self.success:
             self.move_base.cancel_goal()

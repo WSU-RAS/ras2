@@ -2,8 +2,10 @@ import rospy
 import rospkg
 
 from turtlebot3_msgs.msg import SensorState
-from ras_msgs.msg import casas_sensor
+from ras_msgs.msg import casas_data
 from adl.util import get_mac
+
+import math
 
 import tf
 from tf import TransformListener
@@ -30,15 +32,16 @@ class casas_logger():
 
     def __init__(self):
         self.mac = get_mac()
-        self.pub = rospy.Publisher('to_casas', casas_sensor, queue_size=20)
+        self.pub = rospy.Publisher('to_casas', casas_data, queue_size=20)
 
     def log(self, sensor_type, target, message, category):
-        data = casas_sensor()
+        #rospy.logerr('From: ' + str(sensor_type))
+        data = casas_data()
         data.package_type = 'ROS'
         data.sensor_type  = sensor_type
         data.serial       = self.mac
         data.target       = target
-        data.message      = message
+        data.message      = str(message)
         data.category     = category
 
         self.pub.publish(data)
@@ -117,14 +120,13 @@ class location_logger():
 
     def get_robot_location(self):
         t, r = None, None
-        if self.use_robot or self.teleop_only:
-            try:
-                (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
-                t = Transformation(*trans)
-                euler = euler_from_quaternion(rot)
-                r = Rotation(*euler)
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                rospy.warn("manager: Cannot find /map or /base_link")
+        try:
+            (trans, rot) = self.tf.lookupTransform("/map", "/base_link", rospy.Time(0))
+            t = Transformation(*trans)
+            euler = euler_from_quaternion(rot)
+            r = Rotation(*euler)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            rospy.warn("manager: Cannot find /map or /base_link")
         return (t, r)
 
     def log_robot_location(self):

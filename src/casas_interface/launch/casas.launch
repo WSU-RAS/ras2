@@ -2,8 +2,8 @@
 
 <launch>
 
-<node pkg="casas_interface" name="to_casas" type="to_casas.py"/>
-<node pkg="casas_interface" name="from_casas" type="from_casas.py"/>
+<node pkg="casas_interface" name="to_casas" type="to_casas.py" output="screen"/>
+<node pkg="casas_interface" name="from_casas" type="from_casas.py" output="screen"/>
 
 
 </launch>
