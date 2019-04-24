@@ -54,7 +54,7 @@ class goto_point():
 
         # Set timeout constraints
         start_time = rospy.Time.now()
-        timeout = rospy.Duration(secs=30, nsecs=0)
+        timeout = rospy.Duration(secs=60, nsecs=0)
         while self.is_running and rospy.Time.now() - start_time < timeout:
             self.rate.sleep()
 

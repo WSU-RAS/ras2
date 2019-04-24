@@ -131,8 +131,8 @@ class StateM():
                 self.tablet.tablet_setup("options")
 
             # Play video Commands
-            elif response == 'watchstep' or response == 'watchfull':
-                self.tablet.tablet_setup("options")
+            #elif response == 'watchstep' or response == 'watchfull':
+                #self.tablet.tablet_setup("options")
        
             # Goto Object
             elif response == 'goto':

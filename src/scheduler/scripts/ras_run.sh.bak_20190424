@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 90
+sleep 60
 
 source /opt/ros/kinetic/setup.bash
 source ~/cartographer_ws/install_isolated/setup.bash
