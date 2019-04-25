@@ -59,51 +59,14 @@ class StateM():
             return 'failed'
     
     def handle_human(self):
-        # Next locate the human
-        human = self.dec.get_human()
-
-        # Check if human location was updated in
-        #   last 30s
-        start_time = rospy.Time.now()
-        timeout = rospy.Duration(secs=30, nsecs=0)
-        try:
-            if rospy.Time.now() - human.time < timeout:
-                human_found = False
-            else:
-                human_found = True
-        except:
-            human_found = False
-
-        # If human not seen recently go to alternative point
-        if not human_found:
-            mes = self.send_goal(self.dec.point(self.activity, self.step, '1'))
-            self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
-
-        # Try find human again
-        human = self.dec.get_human()
-
-        # Check if human location was updated in
-        #   last 30s    
-        start_time = rospy.Time.now()
-        timeout = rospy.Duration(secs=30, nsecs=0)
-        try:
-            if rospy.Time.now() - human.time < timeout:
-                human_found = False
-            else:
-                human_found = True
-        except:
-            human_found = False
-
-        # If not found stop
-        if not human_found:
-            mes = self.send_goal(self.dec.point(self.activity, self.step, '2'))
-            self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
-
-        # Else goto human
-        else:
-            mes = self.send_goal(self.dec.get_human())
-            self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
         
+        # Goto point 1
+        mes = self.send_goal(self.dec.point(self.activity, self.step, '1'))
+        self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
+        
+        # Goto point 2
+        mes = self.send_goal(self.dec.point(self.activity, self.step, '2'))
+        self.logger.log('ROS_Manager', 'ROS_Nav', mes, 'state')
 
     def handle_tab(self):
         object_, video_step, video_full, face_url = self.dec.get_data(self.activity, self.step)

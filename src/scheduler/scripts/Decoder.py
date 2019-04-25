@@ -2,6 +2,14 @@ import rospy
 
 from object_detection_msgs.srv import ObjectQuery
 
+class Pnt():
+    
+    def __init__(self, x, y, w, z):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.z = z
+
 class Decode():
 
     def __init__(self):
@@ -47,14 +55,30 @@ class Decode():
         return loc
 
     def get_object_location(self, name):
-        rospy.wait_for_service("query_objects")
-        try:
-            query = rospy.ServiceProxy("query_objects", ObjectQuery)
-            result = query(name)
-            return result.locations[0]
-        except rospy.ServiceException, e:
-            rospy.logerr("Service call failed: %s" % e)
-        return None
+        # Lookup Table for points (used to be a service)
+        data = None
+
+        if name == 'meds1':
+            data = Pnt(0,0,0,1)
+        elif name == 'meds2':
+            data = Pnt(0,0,0,1)
+        elif name == 'coffeeobj':
+            data = Pnt(0,0,0,1)
+
+        elif name == 'coffee1':
+            data = Pnt(0,0,0,1)
+        elif name == 'coffee2':
+            data = Pnt(0,0,0,1)
+
+        elif name == 'food1':
+            data = Pnt(0,0,0,1)
+        elif name == 'food2':
+            data = Pnt(0,0,0,1)
+
+        elif name == 'base':
+            data = Pnt(0,0,0,1)
+
+        return data
 
     def get_data(self, activity, error_step):
         """
